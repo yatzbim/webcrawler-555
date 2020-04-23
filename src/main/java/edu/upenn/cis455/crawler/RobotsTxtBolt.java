@@ -68,22 +68,24 @@ public class RobotsTxtBolt implements IRichBolt {
         String currRobotsTxt = null;
 
         URLInfo uInfo = new URLInfo(curr);
-        String robotsTxtSite = uInfo.getHostName() + ":" + uInfo.getPortNo() + "/robots.txt";       
+        String hostPort = uInfo.getHostName() + ":" + uInfo.getPortNo();
+        String robotsTxtSite = hostPort + "/robots.txt";       
         
         if (curr.startsWith("http://")) {
             robotsTxtSite = "http://" + robotsTxtSite;
             // crawl http link
 
             // retrieve robots.txt
+            // TODO: change to RDS logic - store robots metadata
             if (instance.db.getRobotsTxt(robotsTxtSite) != null) {
                 // if we've seen the robots.txt before
                 currRobotsTxt = instance.db.getRobotsTxt(robotsTxtSite);
             } else {
                 // if we've never seen the robots.txt before
                 try {
-                    currRobotsTxt = getHttpRobotsTxt(uInfo.getHostName() + ":" + uInfo.getPortNo());
+                    currRobotsTxt = getHttpRobotsTxt(hostPort);
                 } catch (UnknownHostException e1) {
-                    System.err.println("Failed to connect to http://" + uInfo.getHostName() + ":" + uInfo.getPortNo() + "/robots.txt");
+                    System.err.println("Failed to connect to http://" + hostPort + "/robots.txt");
                     idle.decrementAndGet();
                     return;
                 }
@@ -93,10 +95,11 @@ public class RobotsTxtBolt implements IRichBolt {
                     return;
                 }
 
+                // TODO: RDS not Berkeley
                 try {
                     instance.db.addRobotsTxt(robotsTxtSite, currRobotsTxt);
                 } catch (Exception e) {
-                    System.err.println("Issue saving robots.txt for " + uInfo.getHostName() + ":" + uInfo.getPortNo() + " - Continuing");
+                    System.err.println("Issue saving robots.txt for " + hostPort + " - Continuing");
                 }
             }
         } else if (curr.startsWith("https://")) {
@@ -104,15 +107,16 @@ public class RobotsTxtBolt implements IRichBolt {
             robotsTxtSite = "https://" + robotsTxtSite;
             
             // retrieve robots.txt
+            // TODO: RDS metadata not the raw text
             if (instance.db.getRobotsTxt(robotsTxtSite) != null) {
                 // if we've seen the robots.txt before
                 currRobotsTxt = instance.db.getRobotsTxt(robotsTxtSite);
             } else {
                 // if we've never seen the robots.txt before
                 try {
-                    currRobotsTxt = getHttpsRobotsTxt(uInfo.getHostName() + ":" + uInfo.getPortNo());
+                    currRobotsTxt = getHttpsRobotsTxt(hostPort);
                 } catch (UnknownHostException e1) {
-                    System.err.println("Failed to connect to https://" + uInfo.getHostName() + ":" + uInfo.getPortNo() + "/robots.txt");
+                    System.err.println("Failed to connect to https://" + hostPort + "/robots.txt");
                     idle.decrementAndGet();
                     return;
                 }
@@ -122,10 +126,11 @@ public class RobotsTxtBolt implements IRichBolt {
                     return;
                 }
 
+                // TODO: RDS
                 try {
                     instance.db.addRobotsTxt(robotsTxtSite, currRobotsTxt);
                 } catch (Exception e) {
-                    System.err.println("Issue saving robots.txt for " + uInfo.getHostName() + ":" + uInfo.getPortNo() + " - Continuing");
+                    System.err.println("Issue saving robots.txt for " + hostPort + " - Continuing");
                 }
             }
         } else {

@@ -73,7 +73,7 @@ public class XPathCrawler {
 	static RobotsTxtBolt robotsTxtBolt;
 	static LocalCluster cluster;
 	static Topology topo;
-	static AWSDatabase aws;
+	AWSDatabase aws;
 
 	private XPathCrawler() {
 		frontier = new PriorityBlockingQueue<>();
@@ -115,8 +115,8 @@ public class XPathCrawler {
 
     public void shutdown() {
         quit.set(true);
-//        while (!allAreIdle())
-//            ;
+        while (!allAreIdle())
+            ;
         cluster.killTopology(TOPOLOGY_NAME);
         cluster.shutdown();
         instance.s.close();
@@ -175,7 +175,9 @@ public class XPathCrawler {
 	}
 
 	public static void main(String args[]) {
-		if (args.length < 3) {
+        System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.NoOpLog");
+        
+        if (args.length < 3) {
 			throw new IllegalArgumentException("Too few arguments!");
 		}
 //

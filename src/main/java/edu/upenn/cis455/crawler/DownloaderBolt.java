@@ -3,11 +3,9 @@ package edu.upenn.cis455.crawler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
-import java.net.Socket;
 import java.net.URL;
 import java.util.Date;
 import java.util.LinkedList;
@@ -33,6 +31,7 @@ import edu.upenn.cis.stormlite.tuple.Fields;
 import edu.upenn.cis.stormlite.tuple.Tuple;
 import edu.upenn.cis.stormlite.tuple.Values;
 import edu.upenn.cis455.crawler.info.URLInfo;
+import edu.upenn.cis455.storage.AWSDatabase;
 
 public class DownloaderBolt implements IRichBolt {
 	static Logger log = Logger.getLogger(CrawlerBolt.class);
@@ -45,6 +44,8 @@ public class DownloaderBolt implements IRichBolt {
 	OutputCollector collector;
 
 	static AtomicInteger idle = new AtomicInteger(0);
+	
+	AWSDatabase aws = AWSDatabase.getInstance();
 
 	public DownloaderBolt() {
 //    	log.debug("Starting downloader bolt");
@@ -126,10 +127,12 @@ public class DownloaderBolt implements IRichBolt {
                 long lastMod = httpConn.getLastModified();
                 String contentType = httpConn.getContentType();
                 // download document
+                // TODO: add RDS logic for lastcrawl (Here or after initial HTTP? Ask Vikas)
                 if (instance.db.getDocument(curr) == null || !instance.db.getDocument(curr).equals(page)) {
                     instance.downloads.incrementAndGet();
                     System.out.println("Downloading " + curr);
                     instance.db.addDocument(curr, doc, new Date(lastMod).toGMTString(), contentType);
+                    aws.savePage(curr, doc);
                 }
                 page = doc;
                 instance.incrHeadsSent();
@@ -168,10 +171,12 @@ public class DownloaderBolt implements IRichBolt {
 				long lastMod = httpsConn.getLastModified();
                 String contentType = httpsConn.getContentType();
                 // download document
+                // TODO: add RDS logic for lastcrawl (Here or after initial HTTP? Ask Vikas)
                 if ((instance.db.getDocument(curr) == null || !instance.db.getDocument(curr).equals(page)) && !instance.shouldQuit()) {
                     instance.downloads.incrementAndGet();
                     System.out.println("Downloading " + curr);
                     instance.db.addDocument(curr, doc, new Date(lastMod).toGMTString(), contentType);
+                    aws.savePage(curr, doc);
                 }
                 instance.incrHeadsSent();
 			}
@@ -206,6 +211,8 @@ public class DownloaderBolt implements IRichBolt {
 			}
 		}
 
+		aws.saveOutgoingLinks(curr, newLinks);
+		
 		instance.inFlight.incrementAndGet();
 		collector.emit(new Values<Object>(newLinks));
 		idle.decrementAndGet();

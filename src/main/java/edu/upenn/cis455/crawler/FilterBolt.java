@@ -16,7 +16,6 @@ import edu.upenn.cis.stormlite.bolt.OutputCollector;
 import edu.upenn.cis.stormlite.routers.IStreamRouter;
 import edu.upenn.cis.stormlite.tuple.Fields;
 import edu.upenn.cis.stormlite.tuple.Tuple;
-import edu.upenn.cis.stormlite.tuple.Values;
 
 public class FilterBolt implements IRichBolt {
 	static Logger log = Logger.getLogger(CrawlerBolt.class);
@@ -29,7 +28,7 @@ public class FilterBolt implements IRichBolt {
 	OutputCollector collector;
 
 	static AtomicInteger idle = new AtomicInteger(0);
-
+	
 	public FilterBolt() {
 	}
 
@@ -68,6 +67,8 @@ public class FilterBolt implements IRichBolt {
 			idle.decrementAndGet();
 			return;
 		}
+		
+		
 
 		for (String link : links) {
 			if (!link.startsWith("http://") && !link.startsWith("https://")) {
