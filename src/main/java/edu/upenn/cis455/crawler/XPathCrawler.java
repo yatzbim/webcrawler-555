@@ -4,6 +4,8 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,6 +20,7 @@ import edu.upenn.cis.stormlite.Topology;
 import edu.upenn.cis.stormlite.TopologyBuilder;
 import edu.upenn.cis455.storage.AWSDatabase;
 import edu.upenn.cis455.storage.DBAPI;
+import edu.upenn.cis455.storage.RDS_Connection;
 import test.edu.upenn.cis.stormlite.TestWordCount;
 
 /**
@@ -43,18 +46,19 @@ public class XPathCrawler {
 //	private static final String CHANNEL_BOLT = "CHANNEL_BOLT";
 	private static final String ROBOTSTXT_BOLT = "ROBOTSTXT_BOLT";
 	public static final String TOPOLOGY_NAME = "test";
+	public static final String USER_AGENT = "cis455crawler";
+	public static final RDS_Connection rds = new RDS_Connection("testingdb.cu7l2h9ybbex.us-east-1.rds.amazonaws.com", "3306", "CIS455", "admin", "cis455crawler");
 
 	static XPathCrawler instance = null;
 
 	static String startURL = null;
 	static String baseDir = null;
 	static long maxSize = -1;
-
 	static long maxFiles = -1;
 	static String monitor = "cis455.cis.upenn.edu";
 
-	DBAPI db;
 	BlockingQueue<String> frontier;
+	Map<String, Long> lastAccessed;
 
 	AtomicLong headsSent;
 	AtomicBoolean quit;
@@ -73,17 +77,17 @@ public class XPathCrawler {
 	static RobotsTxtBolt robotsTxtBolt;
 	static LocalCluster cluster;
 	static Topology topo;
-	AWSDatabase aws;
 
 	private XPathCrawler() {
 		frontier = new PriorityBlockingQueue<>();
 		frontier.add(startURL);
 
-		db = new DBAPI(baseDir);
 		headsSent = new AtomicLong(0);
 		quit = new AtomicBoolean(false);
 		inFlight = new AtomicInteger(0);
 		downloads = new AtomicInteger(0);
+		
+		lastAccessed = new HashMap<>();
 
 		this.udpWorks = true;
 		try {
@@ -96,6 +100,7 @@ public class XPathCrawler {
 			System.err.println("Error creating datagram socket for UDP monitoring. Proceeding without UDP monitoring");
 			this.udpWorks = false;
 		}
+		
 	}
 
 	public static synchronized XPathCrawler getInstance() {
@@ -117,6 +122,7 @@ public class XPathCrawler {
         quit.set(true);
         while (!allAreIdle())
             ;
+        AccessCleaner.flag.set(false);
         cluster.killTopology(TOPOLOGY_NAME);
         cluster.shutdown();
         instance.s.close();
@@ -163,10 +169,6 @@ public class XPathCrawler {
 		return headsSent.longValue();
 	}
 
-	public DBAPI getDB() {
-		return db;
-	}
-
 	public static boolean isXMLDoc(String url, String contentType) {
 		if (url == null || !(url.startsWith("http://") || url.startsWith("https://"))) {
 			return false;
@@ -180,38 +182,6 @@ public class XPathCrawler {
         if (args.length < 3) {
 			throw new IllegalArgumentException("Too few arguments!");
 		}
-//
-//		String url = args[0].trim();
-//
-//		String baseDir = args[1].trim();
-//
-//		long maxSize = 0;
-//		try {
-//			maxSize = Integer.parseInt(args[2]);
-//			if (maxSize < 1) {
-//				throw new NumberFormatException();
-//			}
-//		} catch (NumberFormatException e) {
-//			throw new IllegalArgumentException("Invalid maximum size argument!");
-//		}
-//
-//		int maxFiles = -1;
-//		if (args.length > 3) {
-//			try {
-//				maxFiles = Integer.parseInt(args[3]);
-//			} catch (NumberFormatException e) {
-//				throw new IllegalArgumentException("Invalid maximum number of files argument!");
-//			}
-//		}
-//
-//		String monitor = "cis455.cis.upenn.edu";
-//		if (args.length > 4) {
-//			monitor = args[4];
-//		}
-//
-//		XPathCrawler c = new XPathCrawler(url, baseDir, maxSize, maxFiles, monitor);
-//		c.crawl();
-//		System.exit(0);
 		
 		setStartURL(args[0].trim());
 		setDBDirectory(args[1].trim());
@@ -253,5 +223,7 @@ public class XPathCrawler {
 		cluster = new LocalCluster();
 		topo = builder.createTopology();
 		cluster.submitTopology(TOPOLOGY_NAME, config, topo);
+		
+		new AccessCleaner().start();
 	}
 }

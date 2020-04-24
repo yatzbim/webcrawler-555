@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,6 +25,7 @@ import edu.upenn.cis.stormlite.routers.IStreamRouter;
 import edu.upenn.cis.stormlite.tuple.Fields;
 import edu.upenn.cis.stormlite.tuple.Tuple;
 import edu.upenn.cis.stormlite.tuple.Values;
+import edu.upenn.cis455.crawler.info.RobotsTxtInfo;
 import edu.upenn.cis455.crawler.info.URLInfo;
 
 public class RobotsTxtBolt implements IRichBolt {
@@ -49,7 +51,6 @@ public class RobotsTxtBolt implements IRichBolt {
 
     @Override
     public void cleanup() {
-        // TODO Auto-generated method stub
         // Do nothing (?)
     }
     
@@ -69,76 +70,69 @@ public class RobotsTxtBolt implements IRichBolt {
 
         URLInfo uInfo = new URLInfo(curr);
         String hostPort = uInfo.getHostName() + ":" + uInfo.getPortNo();
-        String robotsTxtSite = hostPort + "/robots.txt";       
+        String robotsTxtSite = hostPort + "/robots.txt";     
         
-        if (curr.startsWith("http://")) {
-            robotsTxtSite = "http://" + robotsTxtSite;
-            // crawl http link
+        int exists = XPathCrawler.rds.get_crawldelay(hostPort);
+        
+        if (exists <= 0) {
+            if (curr.startsWith("http://")) {
+                robotsTxtSite = "http://" + robotsTxtSite;
+                // crawl http link
 
-            // retrieve robots.txt
-            // TODO: change to RDS logic - store robots metadata
-            if (instance.db.getRobotsTxt(robotsTxtSite) != null) {
-                // if we've seen the robots.txt before
-                currRobotsTxt = instance.db.getRobotsTxt(robotsTxtSite);
-            } else {
                 // if we've never seen the robots.txt before
                 try {
                     currRobotsTxt = getHttpRobotsTxt(hostPort);
                 } catch (UnknownHostException e1) {
                     System.err.println("Failed to connect to http://" + hostPort + "/robots.txt");
+                    instance.inFlight.incrementAndGet();
+                    collector.emit(new Values<Object>(curr));
                     idle.decrementAndGet();
                     return;
                 }
                 if (currRobotsTxt == null) {
                     System.out.println("Null robots.txt for " + curr + ". Continuing");
+                    instance.inFlight.incrementAndGet();
+                    collector.emit(new Values<Object>(curr));
                     idle.decrementAndGet();
                     return;
                 }
+            } else if (curr.startsWith("https://")) {
+                // case to crawl HTTPS links
+                robotsTxtSite = "https://" + robotsTxtSite;
 
-                // TODO: RDS not Berkeley
-                try {
-                    instance.db.addRobotsTxt(robotsTxtSite, currRobotsTxt);
-                } catch (Exception e) {
-                    System.err.println("Issue saving robots.txt for " + hostPort + " - Continuing");
-                }
-            }
-        } else if (curr.startsWith("https://")) {
-         // case to crawl HTTPS links
-            robotsTxtSite = "https://" + robotsTxtSite;
-            
-            // retrieve robots.txt
-            // TODO: RDS metadata not the raw text
-            if (instance.db.getRobotsTxt(robotsTxtSite) != null) {
-                // if we've seen the robots.txt before
-                currRobotsTxt = instance.db.getRobotsTxt(robotsTxtSite);
-            } else {
-                // if we've never seen the robots.txt before
+                // send http and save
                 try {
                     currRobotsTxt = getHttpsRobotsTxt(hostPort);
                 } catch (UnknownHostException e1) {
                     System.err.println("Failed to connect to https://" + hostPort + "/robots.txt");
+                    instance.inFlight.incrementAndGet();
+                    collector.emit(new Values<Object>(curr));
                     idle.decrementAndGet();
                     return;
                 }
                 if (currRobotsTxt == null) {
                     System.out.println("Null robots.txt for " + curr + ". Continuing");
+                    instance.inFlight.incrementAndGet();
+                    collector.emit(new Values<Object>(curr));
                     idle.decrementAndGet();
                     return;
                 }
 
-                // TODO: RDS
-                try {
-                    instance.db.addRobotsTxt(robotsTxtSite, currRobotsTxt);
-                } catch (Exception e) {
-                    System.err.println("Issue saving robots.txt for " + hostPort + " - Continuing");
-                }
+            } else {
+                idle.decrementAndGet();
+                return;
             }
-        } else {
-            idle.decrementAndGet();
-            return;
+
+            RobotsTxtInfo rInfo = new RobotsTxtInfo(currRobotsTxt);
+
+            List<String> allowed = rInfo.getAllowedLinks(XPathCrawler.USER_AGENT);
+            List<String> disallowed = rInfo.getDisallowedLinks(XPathCrawler.USER_AGENT);
+            int delay = rInfo.getCrawlDelay(XPathCrawler.USER_AGENT);
+
+            XPathCrawler.rds.allowed_write(hostPort, allowed);
+            XPathCrawler.rds.disallowed_write(hostPort, disallowed);
+            XPathCrawler.rds.crawldelay_write(hostPort, delay);
         }
-        
-        // TODO: refit with AWS DBs
         
         collector.emit(new Values<Object>(curr));
         
@@ -185,7 +179,7 @@ public class RobotsTxtBolt implements IRichBolt {
             return null;
         }
         conn.setRequestProperty("Host", robotsTxtHost);
-        conn.setRequestProperty("User-Agent", "cis455crawler");
+        conn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
         conn.setRequestProperty("Accept", "text/plain");
 
         int code;
@@ -299,7 +293,7 @@ public class RobotsTxtBolt implements IRichBolt {
             return null;
         }
         conn.setRequestProperty("Host", robotsTxtHost);
-        conn.setRequestProperty("User-Agent", "cis455crawler");
+        conn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
         conn.setRequestProperty("Accept", "text/plain");
 
         int code;

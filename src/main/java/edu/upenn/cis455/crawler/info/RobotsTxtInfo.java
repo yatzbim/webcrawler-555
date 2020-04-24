@@ -161,6 +161,9 @@ public class RobotsTxtInfo {
 	}
 	
 	public ArrayList<String> getDisallowedLinks(String key){
+	    if (!containsUserAgent(key)) {
+            key = "*";
+        }
 		if (disallowedLinks.get(key) == null) {
 			return new ArrayList<>();
 		}
@@ -168,6 +171,9 @@ public class RobotsTxtInfo {
 	}
 	
 	public ArrayList<String> getAllowedLinks(String key){
+	    if (!containsUserAgent(key)) {
+            key = "*";
+        }
 		if (allowedLinks.get(key) == null) {
 			return new ArrayList<>();
 		}
@@ -187,7 +193,7 @@ public class RobotsTxtInfo {
 	
 	public void print(){
 		for(String userAgent:userAgents){
-			System.out.println("User-Agent: "+userAgent);
+			System.out.println("User-Agent: " + userAgent);
 			ArrayList<String> dlinks = disallowedLinks.get(userAgent);
 			if(dlinks != null)
 				for(String dl:dlinks)

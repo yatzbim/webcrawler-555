@@ -14,6 +14,7 @@ edu/upenn/cis455/storage/DBAPI$RegisterChannel.class
 edu/upenn/cis455/storage/DBAPI$AddUser.class
 edu/upenn/cis/stormlite/LocalCluster.class
 edu/upenn/cis455/storage/DBAPI$AddDocToChannel.class
+edu/upenn/cis455/storage/RDS_Connection.class
 edu/upenn/cis455/xpathengine/XPathEngine.class
 edu/upenn/cis455/storage/DBAPI.class
 edu/upenn/cis455/storage/DBAPI$AddDocument.class

@@ -59,7 +59,7 @@ public class AWSDatabase {
         String key = RDS_Connection.encodeHex(digest.digest(url.getBytes())); // TODO: test
 
         s3Client.putObject(HTML_BUCKET, key, html);
-        System.out.println("HTML Success!");
+//        System.out.println("HTML Success!");
     }
 
     // method to add a list of outgoing links
@@ -81,22 +81,22 @@ public class AWSDatabase {
         String key = RDS_Connection.encodeHex(digest.digest(url.getBytes())); // TODO: Test
 
         s3Client.putObject(OUTURL_BUCKET, key, urls);
-        System.out.println("Links Success!");
+//        System.out.println(url + ": Links Success!");
     }
 
-    public static void main(String[] args) {
-        s3Client.putObject(HTML_BUCKET, "http://crawltest.cis.upenn.edu", "hello!");
-        S3Object o = s3Client.getObject(HTML_BUCKET, "http://crawltest.cis.upenn.edu");
-        S3ObjectInputStream in = o.getObjectContent();
-        try {
-            int i = in.read();
-            while (i != -1) {
-                System.out.print((char) i);
-                i = in.read();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+//    public static void main(String[] args) {
+//        s3Client.putObject(HTML_BUCKET, "http://crawltest.cis.upenn.edu", "hello!");
+//        S3Object o = s3Client.getObject(HTML_BUCKET, "http://crawltest.cis.upenn.edu");
+//        S3ObjectInputStream in = o.getObjectContent();
+//        try {
+//            int i = in.read();
+//            while (i != -1) {
+//                System.out.print((char) i);
+//                i = in.read();
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 
 }

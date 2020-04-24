@@ -124,25 +124,23 @@ public class DownloaderBolt implements IRichBolt {
                     return;
                 }
 
-                long lastMod = httpConn.getLastModified();
-                String contentType = httpConn.getContentType();
+//                long lastMod = httpConn.getLastModified();
+//                String contentType = httpConn.getContentType();
+                
                 // download document
                 // TODO: add RDS logic for lastcrawl (Here or after initial HTTP? Ask Vikas)
-                if (instance.db.getDocument(curr) == null || !instance.db.getDocument(curr).equals(page)) {
-                    instance.downloads.incrementAndGet();
-                    System.out.println("Downloading " + curr);
-                    instance.db.addDocument(curr, doc, new Date(lastMod).toGMTString(), contentType);
-                    aws.savePage(curr, doc);
-                }
-                page = doc;
+                instance.downloads.incrementAndGet();
+                System.out.println("Downloading " + curr);
+                aws.savePage(curr, doc);
+                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
                 instance.incrHeadsSent();
             }
             if (httpConn != null) {
                 httpConn.disconnect();
             }
 
-		} else if (curr.startsWith("https://")) {
-			try {
+        } else if (curr.startsWith("https://")) {
+            try {
 				url = new URL(curr);
 			} catch (MalformedURLException e) {
 				System.err.println("Bad HTTPS URL. Continuing");
@@ -165,33 +163,32 @@ public class DownloaderBolt implements IRichBolt {
 					httpsConn.disconnect();
 					System.out.println("Error getting document from " + curr + " - continuing");
 					idle.decrementAndGet();
-					return;
-				}
+                    return;
+                }
 
-				long lastMod = httpsConn.getLastModified();
-                String contentType = httpsConn.getContentType();
+                // long lastMod = httpsConn.getLastModified();
+                // String contentType = httpsConn.getContentType();
+
                 // download document
                 // TODO: add RDS logic for lastcrawl (Here or after initial HTTP? Ask Vikas)
-                if ((instance.db.getDocument(curr) == null || !instance.db.getDocument(curr).equals(page)) && !instance.shouldQuit()) {
-                    instance.downloads.incrementAndGet();
-                    System.out.println("Downloading " + curr);
-                    instance.db.addDocument(curr, doc, new Date(lastMod).toGMTString(), contentType);
-                    aws.savePage(curr, doc);
-                }
+                instance.downloads.incrementAndGet();
+                System.out.println("Downloading " + curr);
+                aws.savePage(curr, doc);
+                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
                 instance.incrHeadsSent();
-			}
-			if (httpsConn != null) {
-				httpsConn.disconnect();
-			}
+            }
+            if (httpsConn != null) {
+                httpsConn.disconnect();
+            }
 
-		} else {
-			idle.decrementAndGet();
-			return;
-		}
+        } else {
+            idle.decrementAndGet();
+            return;
+        }
 
-		// extract links from document
-		if (crawlable) {
-			// jsoup
+        // extract links from document
+        if (crawlable) {
+            // jsoup
 			// extract links
 			System.out.println("Extracting links from " + curr);
 			Document doc = null;
@@ -209,9 +206,9 @@ public class DownloaderBolt implements IRichBolt {
 					newLinks.add(fullLink.trim());
 				}
 			}
+			aws.saveOutgoingLinks(curr, newLinks);
 		}
-
-		aws.saveOutgoingLinks(curr, newLinks);
+		
 		
 		instance.inFlight.incrementAndGet();
 		collector.emit(new Values<Object>(newLinks));
@@ -240,7 +237,7 @@ public class DownloaderBolt implements IRichBolt {
 
 		sb.append("GET " + url + " HTTP/1.1\r\n");
 		sb.append("Host: " + hostname + "\r\n");
-		sb.append("User-Agent: cis455crawler\r\n");
+		sb.append("User-Agent:" + XPathCrawler.USER_AGENT +"\r\n");
 		sb.append("Accept: text/html, text/xml, application/xml, */*+xml\r\n\r\n");
 
 		return sb.toString();
@@ -308,7 +305,7 @@ public class DownloaderBolt implements IRichBolt {
         URLInfo info = new URLInfo(url);
 
         conn.setRequestProperty("Host", info.getHostName());
-        conn.setRequestProperty("User-Agent", "cis455crawler");
+        conn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
         conn.setRequestProperty("Accept", "text/plain");
 
         int code;
@@ -392,7 +389,7 @@ public class DownloaderBolt implements IRichBolt {
 		URLInfo info = new URLInfo(url);
 
 		conn.setRequestProperty("Host", info.getHostName());
-		conn.setRequestProperty("User-Agent", "cis455crawler");
+		conn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
 		conn.setRequestProperty("Accept", "text/plain");
 
 		int code;

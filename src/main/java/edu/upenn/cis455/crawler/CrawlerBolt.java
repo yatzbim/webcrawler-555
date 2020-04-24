@@ -12,6 +12,7 @@ import java.net.Socket;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -97,8 +98,6 @@ public class CrawlerBolt implements IRichBolt {
         HttpsURLConnection httpsConn = null;
         HttpsURLConnection.setFollowRedirects(false);
 
-        String currRobotsTxt = null;
-
         URLInfo uInfo = new URLInfo(curr);
         
         String hostPort = uInfo.getHostName() + ":" + uInfo.getPortNo();
@@ -132,52 +131,34 @@ public class CrawlerBolt implements IRichBolt {
                 return;
             }
 
-            // TODO: change to RDS logic - only store metadata
-            currRobotsTxt = instance.db.getRobotsTxt(robotsTxtSite);
-
-            if (currRobotsTxt != null) {
-                RobotsTxtInfo rInfo = new RobotsTxtInfo(currRobotsTxt);
-
-                // determines whether enough time has passed to allow you to crawl a website
-                int delay = rInfo.getCrawlDelay("cis455crawler");
-                // TODO: create lists of allowed and disallowed links
-                
-                // TODO: change host crawltime to map in XPathCrawler.java (to be cleared every 30 seconds)
+            // only enter this conditional if a robots.txt exists
+            int delay = XPathCrawler.rds.get_crawldelay(hostPort);
+            if (delay > 0) { // TODO: should this be more specific? There could be a robots.txt with no delay
                 boolean delayAllows = true;
-                long now = new Date().getTime() / 1000;
-                if (instance.db.getLastVisited(hostPort) != null) {
-                    long then = instance.db.getLastVisited(hostPort).getTime()
-                            / 1000;
-                    if (now - then < delay) {
-                        delayAllows = false;
-                    }
+                long now = new Date().getTime();
+                if (instance.lastAccessed.get(hostPort) != null && instance.lastAccessed.get(hostPort) > now) {
+                    delayAllows = false;
                 }
 
-                // check whether crawl delay allows for crawling
                 if (!delayAllows) {
                     instance.frontier.add(curr);
                     httpConn.disconnect();
                     idle.decrementAndGet();
                     return;
                 }
-
-                // TODO: change to RDS logic
-                // checks to see if the crawler is allowed to crawl this URL
-                if (!rInfo.isAllowed("cis455crawler", uInfo.getFilePath())) {
+                
+                // check if it's allowed
+                boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
+                boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
+                if (isDisallowed && !isAllowed) {
                     System.out.println("Not permitted to crawl " + curr + ". Continuing");
                     httpConn.disconnect();
                     idle.decrementAndGet();
                     return;
                 }
-            }
 
-            // since we've waited long enough, update the last access
-            // TODO: change to RDS and in-memory map access
-            try {
-                instance.db.accessHost(hostPort);
-            } catch (Exception e2) {
-                System.err.println("Error updating robots.txt access time for " + uInfo.getHostName() + ":"
-                        + uInfo.getPortNo() + ". Continuing");
+                // since we've waited long enough, update the last access
+                instance.lastAccessed.put(hostPort, new Date().getTime() + (delay * 1000));
             }
 
             // send HEAD request
@@ -190,12 +171,11 @@ public class CrawlerBolt implements IRichBolt {
                 return;
             }
             httpConn.setRequestProperty("Host", hostPort);
-            httpConn.setRequestProperty("User-Agent", "cis455crawler");
-            httpConn.setRequestProperty("Accept", "text/html"); // TODO: change to
-                                                                                                    // just text/html
+            httpConn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
+            httpConn.setRequestProperty("Accept", "text/html");
+
             // TODO: add language filtering (boolean langKnown, request header accept-language)
             instance.incrHeadsSent();
-            
             
             int hCode = 0;
             try {
@@ -250,29 +230,30 @@ public class CrawlerBolt implements IRichBolt {
 
             // TODO: check on character encoding. Do we care? (Probably)
             String contentType = httpConn.getContentType().split(";")[0];
-            if (!contentType.endsWith("/html")) {
-                downloadable = false;
-            }
+            
+            downloadable = contentType.endsWith("/html");
+            
             boolean crawlable = contentType.endsWith("/html");
+            
+            if (!downloadable) {
+                System.out.println(curr + " is not an HTML doc - not downloading or crawling");
+            }
 
             // determine whether document has already been crawled
             long lastMod = httpConn.getLastModified();
 
             // determine whether doc has already been downloaded
-            // TODO: change to RDS logic for last time crawled - if updated since last crawl, download
-            String docInDB = instance.db.getDocument(curr);
-            if (docInDB != null) {
+            long lastCrawl = XPathCrawler.rds.get_crawltime(curr);
+            if (lastCrawl > 0) {
                 // determine whether doc needs to be downloaded again
-                Date docLastModified = instance.db.docLastModified(curr);
-                // this before that -> negative
-                // this after that -> positive
-                if (docLastModified.compareTo(new Date(lastMod)) >= 0) {
+                if (lastMod <= lastCrawl) {
                     System.err.println("Not downloading " + curr + " - we already have the most up-to-date version");
                     downloadable = false;
                 }
             }
             httpConn.disconnect();
             instance.inFlight.incrementAndGet();
+
             collector.emit(new Values<Object>(curr, downloadable, crawlable));
             idle.decrementAndGet();
         } else if (curr.startsWith("https://")) {
@@ -288,48 +269,33 @@ public class CrawlerBolt implements IRichBolt {
                 return;
             }
 
-            // TODO: change to RDS logic - retrieve + store metadata
-            currRobotsTxt = instance.db.getRobotsTxt(robotsTxtSite);
-
-            RobotsTxtInfo rInfo = new RobotsTxtInfo(currRobotsTxt);
-
-            // determine crawl delay
-            // TODO: add RDS logic - store robots.txt data instead of the text, get crawl-delay from RDS
-            // TODO: change host last access to in-memory map
-            int delay = rInfo.getCrawlDelay("cis455crawler");
-            boolean delayAllows = true;
-            long now = new Date().getTime() / 1000;
-            if (instance.db.getLastVisited(hostPort) != null) {
-                long then = instance.db.getLastVisited(hostPort).getTime() / 1000;
-                if (now - then < delay) {
+            int delay = XPathCrawler.rds.get_crawldelay(hostPort);
+            if (delay > 0) { // TODO: should this be more specific? There could be a robots.txt with no delay
+                boolean delayAllows = true;
+                long now = new Date().getTime();
+                if (instance.lastAccessed.get(hostPort) != null && instance.lastAccessed.get(hostPort) > now) {
                     delayAllows = false;
                 }
-            }
 
-            // check whether crawl delay allows for crawling
-            if (!delayAllows) {
-                instance.frontier.add(curr);
-                httpsConn.disconnect();
-                idle.decrementAndGet();
-                return;
-            }
+                if (!delayAllows) {
+                    instance.frontier.add(curr);
+                    httpsConn.disconnect();
+                    idle.decrementAndGet();
+                    return;
+                }
+                
+                // check if it's allowed
+                boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
+                boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
+                if (isDisallowed && !isAllowed) {
+                    System.out.println("Not permitted to crawl " + curr + ". Continuing");
+                    httpsConn.disconnect();
+                    idle.decrementAndGet();
+                    return;
+                }
 
-            // since we've waited long enough, update the last access
-            // TODO: change to in-memory map
-            try {
-                instance.db.accessHost(hostPort);
-            } catch (Exception e2) {
-                System.err.println("Error updating robots.txt access time for " + uInfo.getHostName() + ":"
-                        + uInfo.getPortNo() + ". Continuing");
-            }
-
-            // checks to see if the crawler is allowed to crawl this URL
-            // TODO: add RDS logic
-            if (!rInfo.isAllowed("cis455crawler", uInfo.getFilePath())) {
-                System.out.println("Not permitted to crawl " + curr + ". Continuing");
-                httpsConn.disconnect();
-                idle.decrementAndGet();
-                return;
+                // since we've waited long enough, update the last access
+                instance.lastAccessed.put(hostPort, new Date().getTime() + (delay * 1000));
             }
 
             // send HEAD request
@@ -342,7 +308,7 @@ public class CrawlerBolt implements IRichBolt {
                 return;
             }
             httpsConn.setRequestProperty("Host", hostPort);
-            httpsConn.setRequestProperty("User-Agent", "cis455crawler");
+            httpsConn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
             httpsConn.setRequestProperty("Accept", "text/html");
 
             instance.incrHeadsSent();
@@ -400,23 +366,23 @@ public class CrawlerBolt implements IRichBolt {
             // determine content type
 
             String contentType = httpsConn.getContentType().split(";")[0];
-            if (!contentType.endsWith("/html")) {
-                downloadable = false;
-            }
+            
+            downloadable = contentType.endsWith("/html");
+            
             boolean crawlable = contentType.endsWith("/html");
+            
+            if (!downloadable) {
+                System.out.println(curr + " is not an HTML doc - not downloading or crawling");
+            }
 
             // determine whether document has already been crawled
             long lastMod = httpsConn.getLastModified();
 
             // determine whether doc has already been downloaded
-            // TODO: change to RDS logic - see if key exists, don't retrieve the document
-            String docInDB = instance.db.getDocument(curr);
-            if (docInDB != null) {
+            long lastCrawl = XPathCrawler.rds.get_crawltime(curr);
+            if (lastCrawl > 0) {
                 // determine whether doc needs to be downloaded again
-                Date docLastModified = instance.db.docLastModified(curr);
-                // this before that -> negative
-                // this after that -> positive
-                if (docLastModified.compareTo(new Date(lastMod)) >= 0) {
+                if (lastMod <= lastCrawl) {
                     System.err.println("Not downloading " + curr + " - we already have the most up-to-date version");
                     downloadable = false;
                 }
@@ -453,7 +419,7 @@ public class CrawlerBolt implements IRichBolt {
 
         sb.append("GET " + url + " HTTP/1.1\r\n");
         sb.append("Host: " + hostname + "\r\n");
-        sb.append("User-Agent: cis455crawler\r\n");
+        sb.append("User-Agent:" + XPathCrawler.USER_AGENT +"\r\n");
         sb.append("Accept: text/plain\r\n\r\n");
 
         return sb.toString();
@@ -466,7 +432,7 @@ public class CrawlerBolt implements IRichBolt {
 
         sb.append("HEAD " + url + " HTTP/1.1\r\n");
         sb.append("Host: " + hostname + "\r\n");
-        sb.append("User-Agent: cis455crawler\r\n");
+        sb.append("User-Agent: " + XPathCrawler.USER_AGENT +"\r\n");
         sb.append("Accept: text/html, text/xml, application/xml, */*+xml\r\n\r\n");
 
         return sb.toString();
@@ -490,89 +456,6 @@ public class CrawlerBolt implements IRichBolt {
         }
 
         return null;
-    }
-
-    // determines whether a URL is downloadable
-    public static boolean isDownloadable(String url, String contentType) {
-        if (url == null) {
-            return false;
-        }
-
-        if (!(url.endsWith(".xml") || url.endsWith(".html") || url.endsWith(".htm") || url.endsWith(".rss")
-                || hasNoExtension(url)) || !downloadableContentType(contentType)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    // determines whether a URL has an extension
-    private static boolean hasNoExtension(String url) {
-        String[] pieces = url.split("/");
-
-        if (pieces.length == 1) {
-            return true;
-        }
-
-        String last = pieces[pieces.length - 1];
-
-        for (char c : last.toCharArray()) {
-            if (c == '.') {
-                String preceding = pieces[pieces.length - 2];
-                if (preceding.equals("")) {
-                    return true;
-                }
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    // determines whether content type allows for downloading
-    private static boolean downloadableContentType(String contentType) {
-        return contentType.equalsIgnoreCase("text/html") || contentType.equalsIgnoreCase("text/xml")
-                || contentType.equalsIgnoreCase("application/xml") || contentType.endsWith("+xml");
-    }
-
-    // determines whether a URL is crawlable
-    public static boolean isCrawlable(String url, String contentType) {
-        if (url == null) {
-            return false;
-        }
-
-        if (!(url.startsWith("http://") || url.startsWith("https://"))) {
-            return false;
-        }
-
-        if (!(url.endsWith(".html") || url.endsWith(".htm") || hasNoExtension(url))
-                || !contentType.equalsIgnoreCase("text/html")) {
-            return false;
-        }
-
-        return true;
-    }
-
-    // Determines the last time the document at a URL was modified
-    // used in HTTP
-    @SuppressWarnings("deprecation")
-    public static String getLastModified(String headResponse) {
-        String[] headers = headResponse.split("\r\n");
-        for (String header : headers) {
-            String[] pieces = header.split(": ?[^\\da-zA-Z]");
-            if (pieces.length != 2) {
-                continue;
-            }
-
-            String field = pieces[0].trim();
-            String value = pieces[1].trim();
-
-            if (field.equalsIgnoreCase("Last-Modified")) {
-                return value;
-            }
-        }
-
-        return new Date(0).toGMTString();
     }
 
     // Get robots.txt for a new HTTPS host
@@ -601,7 +484,7 @@ public class CrawlerBolt implements IRichBolt {
             return null;
         }
         conn.setRequestProperty("Host", robotsTxtHost);
-        conn.setRequestProperty("User-Agent", "cis455crawler");
+        conn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
         conn.setRequestProperty("Accept", "text/plain");
 
         int code;
@@ -715,7 +598,7 @@ public class CrawlerBolt implements IRichBolt {
             return null;
         }
         conn.setRequestProperty("Host", robotsTxtHost);
-        conn.setRequestProperty("User-Agent", "cis455crawler");
+        conn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
         conn.setRequestProperty("Accept", "text/plain");
 
         int code;

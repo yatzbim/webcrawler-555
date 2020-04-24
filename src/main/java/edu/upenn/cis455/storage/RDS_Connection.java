@@ -58,7 +58,7 @@ public class RDS_Connection {
     }
     
     //Function to write hostnames and allowed paths to ALLOWS table
-    public void allowed_write(String hostname, ArrayList<String> allowed_paths) {
+    public void allowed_write(String hostname, List<String> allowed_paths) {
         
         try{
         Class.forName("com.mysql.cj.jdbc.Driver");  
@@ -83,7 +83,7 @@ public class RDS_Connection {
     }
     //Function to write hostnames and disallowed paths to DISALLOWS table
 
-    public void disallowed_write(String hostname, ArrayList<String> disallowed_paths) {
+    public void disallowed_write(String hostname, List<String> disallowed_paths) {
         
         try{
             Class.forName("com.mysql.cj.jdbc.Driver");  
