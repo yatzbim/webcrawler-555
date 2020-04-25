@@ -14,6 +14,7 @@ import edu.upenn.cis.stormlite.spout.IRichSpout;
 import edu.upenn.cis.stormlite.spout.SpoutOutputCollector;
 import edu.upenn.cis.stormlite.tuple.Fields;
 import edu.upenn.cis.stormlite.tuple.Values;
+import edu.upenn.cis455.crawler.info.URLInfo;
 
 public class URLSpout implements IRichSpout {
 	static Logger log = Logger.getLogger(URLSpout.class);
@@ -66,8 +67,22 @@ public class URLSpout implements IRichSpout {
 				idle.incrementAndGet();
 				// frontier is not empty
 				String curr = instance.frontier.poll();
+				
+				URLInfo uInfo = new URLInfo(curr);
+		        if (uInfo.getHostName().contains("google")
+		                || (uInfo.getHostName().contains("wikipedia") && uInfo.getFilePath().contains("&action=edit"))) {
+		            idle.decrementAndGet();
+		            return;
+		        }
+				
+				if (XPathCrawler.rds.get_crawltime(curr) > 0) {
+				    System.out.println("Found er again cap'n");
+		            idle.decrementAndGet();
+		            return;
+		        }
 
 				instance.inFlight.incrementAndGet();
+//				System.out.println("Emitted from spout");
 				this.collector.emit(new Values<Object>(curr.trim()));
 				idle.decrementAndGet();
 //			} else if (XPathCrawler.allAreIdle() && instance.inFlight.get() == 0) {

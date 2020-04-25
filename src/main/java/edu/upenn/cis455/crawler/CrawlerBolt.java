@@ -1,5 +1,7 @@
 package edu.upenn.cis455.crawler;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.InputStream;
@@ -20,6 +22,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.HttpsURLConnection;
 
 import org.apache.log4j.Logger;
+import org.apache.tika.exception.TikaException;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.xml.sax.SAXException;
+import org.apache.tika.parser.Parser;
 
 import edu.upenn.cis.stormlite.OutputFieldsDeclarer;
 import edu.upenn.cis.stormlite.TopologyContext;
@@ -31,6 +38,7 @@ import edu.upenn.cis.stormlite.tuple.Tuple;
 import edu.upenn.cis.stormlite.tuple.Values;
 import edu.upenn.cis455.crawler.info.RobotsTxtInfo;
 import edu.upenn.cis455.crawler.info.URLInfo;
+import edu.upenn.cis455.storage.RDS_Connection;
 
 public class CrawlerBolt implements IRichBolt {
     static Logger log = Logger.getLogger(CrawlerBolt.class);
@@ -73,6 +81,8 @@ public class CrawlerBolt implements IRichBolt {
             return;
         }
 
+        
+        
         idle.incrementAndGet();
 
         instance.inFlight.decrementAndGet();
@@ -88,6 +98,11 @@ public class CrawlerBolt implements IRichBolt {
                 System.err.println("Error sending UDP monitoring packet for " + curr + ". Continuing");
             }
         }
+        
+        if (XPathCrawler.rds.get_crawltime(curr) > 0) {
+            idle.decrementAndGet();
+            return;
+        }
 
         // for HTTP
         HttpURLConnection httpConn = null;
@@ -99,7 +114,7 @@ public class CrawlerBolt implements IRichBolt {
         HttpsURLConnection.setFollowRedirects(false);
 
         URLInfo uInfo = new URLInfo(curr);
-        
+
         String hostPort = uInfo.getHostName() + ":" + uInfo.getPortNo();
 
         if (instance.downloads.get() >= XPathCrawler.maxFiles && XPathCrawler.maxFiles > 0) {
@@ -132,33 +147,39 @@ public class CrawlerBolt implements IRichBolt {
             }
 
             // only enter this conditional if a robots.txt exists
+            
+
+            boolean delayAllows = true;
+            long now = new Date().getTime();
+            if (instance.lastAccessed.get(hostPort) != null && instance.lastAccessed.get(hostPort) > now) {
+                delayAllows = false;
+            }
+
+            if (!delayAllows) {
+                instance.frontier.add(curr);
+                httpConn.disconnect();
+                idle.decrementAndGet();
+                return;
+            }
+            
             int delay = XPathCrawler.rds.get_crawldelay(hostPort);
-            if (delay > 0) { // TODO: should this be more specific? There could be a robots.txt with no delay
-                boolean delayAllows = true;
-                long now = new Date().getTime();
-                if (instance.lastAccessed.get(hostPort) != null && instance.lastAccessed.get(hostPort) > now) {
-                    delayAllows = false;
-                }
+//            System.out.println("Passed crawler rds 1");
 
-                if (!delayAllows) {
-                    instance.frontier.add(curr);
-                    httpConn.disconnect();
-                    idle.decrementAndGet();
-                    return;
-                }
-                
-                // check if it's allowed
-                boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
-                boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
-                if (isDisallowed && !isAllowed) {
-                    System.out.println("Not permitted to crawl " + curr + ". Continuing");
-                    httpConn.disconnect();
-                    idle.decrementAndGet();
-                    return;
-                }
+            // since we've waited long enough, update the last access
+            instance.access(hostPort, new Date().getTime() + (delay * 1000));
 
-                // since we've waited long enough, update the last access
-                instance.lastAccessed.put(hostPort, new Date().getTime() + (delay * 1000));
+            // check if it's allowed
+            boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
+//            System.out.println("Passed crawler rds 2");
+            boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
+//            System.out.println("Passed crawler rds 3");
+            if (isDisallowed && !isAllowed) {
+                System.out.println("Not permitted to crawl " + curr + ". Continuing");
+                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
+//                System.out.println("Passed crawler rds 4");
+                httpConn.disconnect();
+                idle.decrementAndGet();
+                return;
             }
 
             // send HEAD request
@@ -173,10 +194,12 @@ public class CrawlerBolt implements IRichBolt {
             httpConn.setRequestProperty("Host", hostPort);
             httpConn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
             httpConn.setRequestProperty("Accept", "text/html");
+            httpConn.setRequestProperty("Accept-Language", "en");
 
-            // TODO: add language filtering (boolean langKnown, request header accept-language)
+            // TODO: add language filtering (boolean langKnown, request header
+            // accept-language)
             instance.incrHeadsSent();
-            
+
             int hCode = 0;
             try {
                 hCode = httpConn.getResponseCode();
@@ -187,6 +210,7 @@ public class CrawlerBolt implements IRichBolt {
             if (hCode >= 300 && hCode < 400) {
                 // handle redirect (3xx) response code
                 String location = httpConn.getHeaderField("Location");
+                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
                 instance.frontier.add(location);
                 System.out.println("Redirection of type " + hCode + " found from " + curr + " to " + location);
                 httpConn.disconnect();
@@ -194,10 +218,13 @@ public class CrawlerBolt implements IRichBolt {
                 return;
             } else if (hCode >= 400) {
                 // handle error (4xx, 5xx) response code
-                System.err.print(curr + ": ");
+                System.err.print(curr + ": " + hCode + " ");
                 switch (hCode) {
                 case 400:
                     System.err.print("Bad request");
+                    break;
+                case 403:
+                    System.err.print("Forbidden");
                     break;
                 case 404:
                     System.err.print("Content not found");
@@ -208,7 +235,7 @@ public class CrawlerBolt implements IRichBolt {
                 case 409:
                     System.err.print("CETS error. Check the format of your request");
                 default:
-                    System.err.print("Other error. Developer needs to get off his ass and do some debugging");
+                    System.err.print(hCode + ". Developer needs to get off his ass and do some debugging");
                 }
                 System.err.println(" - Continuing");
                 httpConn.disconnect();
@@ -229,28 +256,39 @@ public class CrawlerBolt implements IRichBolt {
             // determine content type
 
             // TODO: check on character encoding. Do we care? (Probably)
-            String contentType = httpConn.getContentType().split(";")[0];
-            
-            downloadable = contentType.endsWith("/html");
-            
-            boolean crawlable = contentType.endsWith("/html");
-            
+            String contentType = httpConn.getContentType();
+            if (contentType != null) {
+                contentType = contentType.split(";")[0];
+            }
+
+            downloadable = contentType != null && contentType.endsWith("/html");
+
+            boolean crawlable = contentType != null && contentType.endsWith("/html");
+
             if (!downloadable) {
                 System.out.println(curr + " is not an HTML doc - not downloading or crawling");
             }
 
             // determine whether document has already been crawled
-            long lastMod = httpConn.getLastModified();
+//            long lastMod = httpConn.getLastModified();
 
             // determine whether doc has already been downloaded
-            long lastCrawl = XPathCrawler.rds.get_crawltime(curr);
-            if (lastCrawl > 0) {
-                // determine whether doc needs to be downloaded again
-                if (lastMod <= lastCrawl) {
-                    System.err.println("Not downloading " + curr + " - we already have the most up-to-date version");
-                    downloadable = false;
-                }
-            }
+            
+            // TODO: comments below
+//            long lastCrawl = XPathCrawler.rds.get_crawltime(curr);
+//            if (lastCrawl > 0) {
+//                // determine whether doc needs to be downloaded again
+////                if (lastMod <= lastCrawl) {
+////                    System.err.println("Not downloading " + curr + " - we already have the most up-to-date version");
+////                    downloadable = false;
+////                }
+//                System.err.println("Not downloading " + curr + " - it's already been crawled");
+//                downloadable = false;
+//                httpConn.disconnect();
+//                idle.decrementAndGet();
+//                return;
+//            }
+            // TODO: comments above
             httpConn.disconnect();
             instance.inFlight.incrementAndGet();
 
@@ -269,8 +307,8 @@ public class CrawlerBolt implements IRichBolt {
                 return;
             }
 
-            int delay = XPathCrawler.rds.get_crawldelay(hostPort);
-            if (delay > 0) { // TODO: should this be more specific? There could be a robots.txt with no delay
+            
+                // TODO: should this be more specific? There could be a robots.txt with no delay
                 boolean delayAllows = true;
                 long now = new Date().getTime();
                 if (instance.lastAccessed.get(hostPort) != null && instance.lastAccessed.get(hostPort) > now) {
@@ -283,20 +321,21 @@ public class CrawlerBolt implements IRichBolt {
                     idle.decrementAndGet();
                     return;
                 }
-                
+
                 // check if it's allowed
                 boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
                 boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
                 if (isDisallowed && !isAllowed) {
                     System.out.println("Not permitted to crawl " + curr + ". Continuing");
+                    XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
                     httpsConn.disconnect();
                     idle.decrementAndGet();
                     return;
                 }
 
+                int delay = XPathCrawler.rds.get_crawldelay(hostPort);
                 // since we've waited long enough, update the last access
                 instance.lastAccessed.put(hostPort, new Date().getTime() + (delay * 1000));
-            }
 
             // send HEAD request
             try {
@@ -310,10 +349,12 @@ public class CrawlerBolt implements IRichBolt {
             httpsConn.setRequestProperty("Host", hostPort);
             httpsConn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
             httpsConn.setRequestProperty("Accept", "text/html");
+            httpsConn.setRequestProperty("Accept-Language", "en");
 
             instance.incrHeadsSent();
 
-            // TODO: add language support (only accept english, and boolean if language is known)
+            // TODO: add language support (only accept english, and boolean if language is
+            // known)
 
             int hCode = 0;
             try {
@@ -325,17 +366,22 @@ public class CrawlerBolt implements IRichBolt {
             if (hCode >= 300 && hCode < 400) {
                 // handle redirect (3xx) response code
                 String location = httpsConn.getHeaderField("Location");
+                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
                 instance.frontier.add(location);
                 System.out.println("Redirection of type " + hCode + " found from " + curr + " to " + location);
+                
                 httpsConn.disconnect();
                 idle.decrementAndGet();
                 return;
             } else if (hCode >= 400) {
                 // handle error (4xx, 5xx) response code
-                System.err.print(curr + ": ");
+                System.err.print(curr + ": " + hCode + " ");
                 switch (hCode) {
                 case 400:
                     System.err.print("Bad request");
+                    break;
+                case 403:
+                    System.err.print("Forbidden");
                     break;
                 case 404:
                     System.err.print("Content not found");
@@ -346,7 +392,7 @@ public class CrawlerBolt implements IRichBolt {
                 case 409:
                     System.err.print("CETS error. Check the format of your request");
                 default:
-                    System.err.print("Other error. Developer needs to get off his ass and do some debugging");
+                    System.err.print(hCode + ". Developer needs to get off his ass and do some debugging");
                 }
                 System.err.println(" - Continuing");
                 httpsConn.disconnect();
@@ -366,11 +412,11 @@ public class CrawlerBolt implements IRichBolt {
             // determine content type
 
             String contentType = httpsConn.getContentType().split(";")[0];
-            
+
             downloadable = contentType.endsWith("/html");
-            
+
             boolean crawlable = contentType.endsWith("/html");
-            
+
             if (!downloadable) {
                 System.out.println(curr + " is not an HTML doc - not downloading or crawling");
             }
@@ -379,14 +425,23 @@ public class CrawlerBolt implements IRichBolt {
             long lastMod = httpsConn.getLastModified();
 
             // determine whether doc has already been downloaded
-            long lastCrawl = XPathCrawler.rds.get_crawltime(curr);
-            if (lastCrawl > 0) {
-                // determine whether doc needs to be downloaded again
-                if (lastMod <= lastCrawl) {
-                    System.err.println("Not downloading " + curr + " - we already have the most up-to-date version");
-                    downloadable = false;
-                }
-            }
+            
+            // TODO: below comments
+//            long lastCrawl = XPathCrawler.rds.get_crawltime(curr);
+//            if (lastCrawl > 0) {
+//                // determine whether doc needs to be downloaded again
+////                if (lastMod <= lastCrawl) {
+////                    System.err.println("Not downloading " + curr + " - we already have the most up-to-date version");
+////                    downloadable = false;
+////                }
+//                System.err.println("Not downloading " + curr + " - it's already been crawled");
+//                downloadable = false;
+//                httpsConn.disconnect();
+//                idle.decrementAndGet();
+//                return;
+//            }
+            // TODO: above comments
+            
             httpsConn.disconnect();
             instance.inFlight.incrementAndGet();
             collector.emit(new Values<Object>(curr, downloadable, crawlable));
@@ -411,278 +466,10 @@ public class CrawlerBolt implements IRichBolt {
     public Fields getSchema() {
         return this.schema;
     }
-
-    // Forms HTTP request to GET robots.txt
-    // used in HTTP
-    public static String getRobotsTxt(String url, String hostname) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("GET " + url + " HTTP/1.1\r\n");
-        sb.append("Host: " + hostname + "\r\n");
-        sb.append("User-Agent:" + XPathCrawler.USER_AGENT +"\r\n");
-        sb.append("Accept: text/plain\r\n\r\n");
-
-        return sb.toString();
-    }
-
-    // Forms HTTP request for HEAD based on host and URL
-    // used in HTTP
-    public static String headRequest(String url, String hostname) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("HEAD " + url + " HTTP/1.1\r\n");
-        sb.append("Host: " + hostname + "\r\n");
-        sb.append("User-Agent: " + XPathCrawler.USER_AGENT +"\r\n");
-        sb.append("Accept: text/html, text/xml, application/xml, */*+xml\r\n\r\n");
-
-        return sb.toString();
-    }
-
-    // Determines the redirect location for a link
-    // used in HTTP
-    public static String getLocation(String headerString) {
-        String[] headers = headerString.split("\r\n");
-        for (String header : headers) {
-            String[] keyVal = header.split(": ?[^/a-zA-z]");
-            if (keyVal.length != 2) {
-                continue;
-            }
-            String key = keyVal[0].trim();
-            String val = keyVal[1].trim();
-
-            if (key.equalsIgnoreCase("Location")) {
-                return val;
-            }
-        }
-
-        return null;
-    }
-
-    // Get robots.txt for a new HTTPS host
-    public static String getHttpsRobotsTxt(String robotsTxtHost) throws UnknownHostException {
-        URL url = null;
-        try {
-            url = new URL("https://" + robotsTxtHost + "/robots.txt");
-        } catch (MalformedURLException e2) {
-            System.err.println("Bad URL: https://" + robotsTxtHost + "/robots.txt");
-            return null;
-        }
-
-        HttpsURLConnection conn = null;
-        try {
-            conn = (HttpsURLConnection) url.openConnection();
-        } catch (IOException e2) {
-            System.err.println("Failed to connect to https://" + robotsTxtHost + "/robots.txt");
-            return null;
-        }
-
-        try {
-            conn.setRequestMethod("GET");
-        } catch (ProtocolException e1) {
-            System.err.println("Error setting robots.txt request method for " + robotsTxtHost);
-            conn.disconnect();
-            return null;
-        }
-        conn.setRequestProperty("Host", robotsTxtHost);
-        conn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
-        conn.setRequestProperty("Accept", "text/plain");
-
-        int code;
-        try {
-            code = conn.getResponseCode();
-        } catch (UnknownHostException e) {
-            throw (e);
-        } catch (IOException e) {
-            System.err.println(e.toString());
-            System.err.println("Error getting robots.txt response code for " + robotsTxtHost);
-            conn.disconnect();
-            return null;
-        }
-        if (code >= 400) {
-            System.err.print("https://" + robotsTxtHost + "/robots.txt: ");
-            switch (code) {
-            case 400:
-                System.err.print("Bad request");
-                break;
-            case 404:
-                System.err.print("Content not found");
-                break;
-            case 406:
-                System.err.print("File type received was not HTML, XML or RSS");
-                break;
-            case 409:
-                System.err.print("CETS error. Check the format of your request");
-            default:
-                System.err.print("Other error. Developer needs to get off his ass and do some debugging");
-            }
-            System.err.println(" - Continuing");
-            conn.disconnect();
-            return null;
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        InputStream input;
-        try {
-            input = conn.getInputStream();
-        } catch (IOException e) {
-            System.err.println("Error getting robots.txt input stream for " + robotsTxtHost);
-            conn.disconnect();
-            return null;
-        }
-        InputStreamReader in = new InputStreamReader(input);
-        int i = 0;
-        try {
-            while (i != -1) {
-                i = in.read();
-                if (i != -1) {
-                    sb.append((char) i);
-                }
-
-                if (!in.ready()) {
-                    break;
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("Error getting robots.txt response for " + robotsTxtHost);
-            conn.disconnect();
-            try {
-                input.close();
-                in.close();
-            } catch (IOException e1) {
-            }
-            return null;
-        }
-
-        String robotsResponse = sb.toString();
-
-        if (robotsResponse.isEmpty()) {
-            try {
-                input.close();
-                in.close();
-            } catch (IOException e) {
-                System.err.println("Error closing robots.txt input stream for " + robotsTxtHost);
-            }
-            conn.disconnect();
-            return null;
-        }
-
-        conn.disconnect();
-
-        return robotsResponse;
-    }
-
-    // Get robots.txt for a new HTTP host
-    public static String getHttpRobotsTxt(String robotsTxtHost) throws UnknownHostException {
-        URL url = null;
-        try {
-            url = new URL("http://" + robotsTxtHost + "/robots.txt");
-        } catch (MalformedURLException e2) {
-            System.err.println("Bad URL: http://" + robotsTxtHost + "/robots.txt");
-            return null;
-        }
-
-        HttpURLConnection conn = null;
-        try {
-            conn = (HttpURLConnection) url.openConnection();
-        } catch (IOException e2) {
-            System.err.println("Failed to connect to http://" + robotsTxtHost + "/robots.txt");
-            return null;
-        }
-
-        try {
-            conn.setRequestMethod("GET");
-        } catch (ProtocolException e1) {
-            System.err.println("Error setting robots.txt request method for " + robotsTxtHost);
-            conn.disconnect();
-            return null;
-        }
-        conn.setRequestProperty("Host", robotsTxtHost);
-        conn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
-        conn.setRequestProperty("Accept", "text/plain");
-
-        int code;
-        try {
-            code = conn.getResponseCode();
-        } catch (UnknownHostException e) {
-            throw (e);
-        } catch (IOException e) {
-            System.err.println(e.toString());
-            System.err.println("Error getting robots.txt response code for " + robotsTxtHost);
-            conn.disconnect();
-            return null;
-        }
-        if (code >= 400) {
-            System.err.print("http://" + robotsTxtHost + "/robots.txt: ");
-            switch (code) {
-            case 400:
-                System.err.print("Bad request");
-                break;
-            case 404:
-                System.err.print("Content not found");
-                break;
-            case 406:
-                System.err.print("File type received was not HTML, XML or RSS");
-                break;
-            case 409:
-                System.err.print("CETS error. Check the format of your request");
-            default:
-                System.err.print("Other error. Developer needs to get off his ass and do some debugging");
-            }
-            System.err.println(" - Continuing");
-            conn.disconnect();
-            return null;
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        InputStream input;
-        try {
-            input = conn.getInputStream();
-        } catch (IOException e) {
-            System.err.println("Error getting robots.txt input stream for " + robotsTxtHost);
-            conn.disconnect();
-            return null;
-        }
-        InputStreamReader in = new InputStreamReader(input);
-        int i = 0;
-        try {
-            while (i != -1) {
-                i = in.read();
-                if (i != -1) {
-                    sb.append((char) i);
-                }
-
-                if (!in.ready()) {
-                    break;
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("Error getting robots.txt response for " + robotsTxtHost);
-            conn.disconnect();
-            try {
-                input.close();
-                in.close();
-            } catch (IOException e1) {
-            }
-            return null;
-        }
-
-        String robotsResponse = sb.toString();
-
-        if (robotsResponse.isEmpty()) {
-            try {
-                input.close();
-                in.close();
-            } catch (IOException e) {
-                System.err.println("Error closing robots.txt input stream for " + robotsTxtHost);
-            }
-            conn.disconnect();
-            return null;
-        }
-
-        conn.disconnect();
-
-        return robotsResponse;
-    }
+    
+    
+//    public static void main(String[] args) {
+//        String s = "https://en.wikipedia.org/wiki/Main_Page";
+//        System.out.println(RDS_Connection.digest("SHA-256", s));
+//    }
 }

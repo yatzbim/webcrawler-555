@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.HttpsURLConnection;
 
 import org.apache.log4j.Logger;
+import org.apache.tika.language.LanguageIdentifier;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -34,80 +35,81 @@ import edu.upenn.cis455.crawler.info.URLInfo;
 import edu.upenn.cis455.storage.AWSDatabase;
 
 public class DownloaderBolt implements IRichBolt {
-	static Logger log = Logger.getLogger(CrawlerBolt.class);
-	String executorId = UUID.randomUUID().toString();
+    static Logger log = Logger.getLogger(CrawlerBolt.class);
+    String executorId = UUID.randomUUID().toString();
 
-	static XPathCrawler instance = XPathCrawler.getInstance();
+    static XPathCrawler instance = XPathCrawler.getInstance();
 
-	Fields schema = new Fields("links");
+    Fields schema = new Fields("links");
 
-	OutputCollector collector;
+    OutputCollector collector;
 
-	static AtomicInteger idle = new AtomicInteger(0);
-	
-	AWSDatabase aws = AWSDatabase.getInstance();
+    static AtomicInteger idle = new AtomicInteger(0);
 
-	public DownloaderBolt() {
-//    	log.debug("Starting downloader bolt");
-	}
+    AWSDatabase aws = AWSDatabase.getInstance();
 
-	@Override
-	public String getExecutorId() {
-		return this.executorId;
-	}
+    public DownloaderBolt() {
+        // log.debug("Starting downloader bolt");
+    }
 
-	@Override
-	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(schema);
-	}
+    @Override
+    public String getExecutorId() {
+        return this.executorId;
+    }
 
-	@Override
-	public void cleanup() {
-	}
+    @Override
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        declarer.declare(schema);
+    }
 
-	public static boolean isIdle() {
-		return idle.get() == 0;
-	}
+    @Override
+    public void cleanup() {
+    }
 
-	@SuppressWarnings("deprecation")
-	@Override
-	public void execute(Tuple input) {
-		if (instance.shouldQuit()) {
-			idle.set(0);
-			return;
-		}
+    public static boolean isIdle() {
+        return idle.get() == 0;
+    }
 
-		idle.incrementAndGet();
-		
-		instance.inFlight.decrementAndGet();
-		
-		// for HTTP
-		HttpURLConnection httpConn = null;
+    @SuppressWarnings("deprecation")
+    @Override
+    public void execute(Tuple input) {
+        if (instance.shouldQuit()) {
+            idle.set(0);
+            return;
+        }
 
-		// for HTTPS
-		URL url = null;
-		HttpsURLConnection httpsConn = null;
-		HttpsURLConnection.setFollowRedirects(false);
+        idle.incrementAndGet();
 
-		String curr = input.getStringByField("url");
-		boolean downloadable = (boolean) input.getObjectByField("downloadable");
-		boolean crawlable = (boolean) input.getObjectByField("crawlable");
+        instance.inFlight.decrementAndGet();
 
-		URLInfo uInfo = new URLInfo(curr);
+        // for HTTP
+        HttpURLConnection httpConn = null;
 
-		List<String> newLinks = new LinkedList<>();
-		String page = input.getStringByField("page");
+        // for HTTPS
+        URL url = null;
+        HttpsURLConnection httpsConn = null;
+        HttpsURLConnection.setFollowRedirects(false);
 
-		if (curr.startsWith("http://")) {
-		    try {
-                url = new URL(curr);
-            } catch (MalformedURLException e) {
-                System.err.println("Bad HTTPS URL. Continuing");
-                idle.decrementAndGet();
-                return;
-            }
+        String curr = input.getStringByField("url");
+        boolean downloadable = (boolean) input.getObjectByField("downloadable");
+//        boolean crawlable = (boolean) input.getObjectByField("crawlable");
 
-            if (downloadable) {
+        URLInfo uInfo = new URLInfo(curr);
+
+        List<String> newLinks = new LinkedList<>();
+        
+        String page = null;
+
+        if (downloadable) {
+            if (curr.startsWith("http://")) {
+                try {
+                    url = new URL(curr);
+                } catch (MalformedURLException e) {
+                    System.err.println("Bad HTTPS URL. Continuing");
+                    idle.decrementAndGet();
+                    return;
+                }
+
                 // send GET request
                 try {
                     httpConn = (HttpURLConnection) url.openConnection();
@@ -117,184 +119,254 @@ public class DownloaderBolt implements IRichBolt {
                     return;
                 }
 
-                String doc = getDocument(httpConn, curr);
-                if (doc == null) {
+                page = getDocument(httpConn, curr);
+                if (page == null) {
                     httpConn.disconnect();
                     idle.decrementAndGet();
                     return;
                 }
 
-//                long lastMod = httpConn.getLastModified();
-//                String contentType = httpConn.getContentType();
-                
-                // download document
-                // TODO: add RDS logic for lastcrawl (Here or after initial HTTP? Ask Vikas)
-                instance.downloads.incrementAndGet();
-                System.out.println("Downloading " + curr);
-                aws.savePage(curr, doc);
-                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
-                instance.incrHeadsSent();
-            }
-            if (httpConn != null) {
-                httpConn.disconnect();
-            }
-
-        } else if (curr.startsWith("https://")) {
-            try {
-				url = new URL(curr);
-			} catch (MalformedURLException e) {
-				System.err.println("Bad HTTPS URL. Continuing");
-				idle.decrementAndGet();
-				return;
-			}
-
-			if (downloadable) {
-				// send GET request
-				try {
-					httpsConn = (HttpsURLConnection) url.openConnection();
-				} catch (IOException e) {
-					System.err.println("Error connecting to " + curr + " for GET - continuing");
-					idle.decrementAndGet();
-					return;
-				}
-
-				String doc = getDocumentHttps(httpsConn, curr);
-				if (doc == null) {
-					httpsConn.disconnect();
-					System.out.println("Error getting document from " + curr + " - continuing");
-					idle.decrementAndGet();
+            } else if (curr.startsWith("https://")) {
+                try {
+                    url = new URL(curr);
+                } catch (MalformedURLException e) {
+                    System.err.println("Bad HTTPS URL. Continuing");
+                    idle.decrementAndGet();
                     return;
                 }
 
-                // long lastMod = httpsConn.getLastModified();
-                // String contentType = httpsConn.getContentType();
+                // send GET request
+                try {
+                    httpsConn = (HttpsURLConnection) url.openConnection();
+                } catch (IOException e) {
+                    System.err.println("Error connecting to " + curr + " for GET - continuing");
+                    idle.decrementAndGet();
+                    return;
+                }
 
-                // download document
-                // TODO: add RDS logic for lastcrawl (Here or after initial HTTP? Ask Vikas)
+                page = getDocumentHttps(httpsConn, curr);
+                if (page == null) {
+                    httpsConn.disconnect();
+                    System.out.println("Error getting document from " + curr + " - continuing");
+                    idle.decrementAndGet();
+                    return;
+                }
+                
+            } else {
+                idle.decrementAndGet();
+                return;
+            }
+
+            // jsoup
+            Document doc = null;
+            try {
+                doc = Jsoup.connect(curr).get();
+            } catch (IOException e) {
+                System.err.println("Error connecting to " + curr + " with JSoup. Continuing");
+            }
+            
+            String text = null;
+            LanguageIdentifier object = null;
+            if (doc != null) {
+                text = doc.text();
+                object = new LanguageIdentifier(text);
+            }
+            
+            
+            downloadable = XPathCrawler.rds.get_crawltime(curr) == 0;
+            XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
+            
+            if (object != null && !object.getLanguage().equals("en") && object.isReasonablyCertain()) {
+                System.out.println(curr + " is not an english page.");
+                if (httpConn != null) {
+                    httpConn.disconnect();
+                }
+                if (httpsConn != null) {
+                    httpsConn.disconnect();
+                }
+                idle.decrementAndGet();
+                return;
+            } else if (downloadable) {
+                // extract links
+                if (doc != null) {
+                    System.out.println("Extracting links from " + curr);
+                    Elements linkElts = doc.select("a[href]");
+                    for (Element elt : linkElts) {
+                        String rawLink = elt.attributes().get("href").trim();
+                        if (rawLink.charAt(0) == '#' || (rawLink.length() > 1 && rawLink.charAt(0) == '/' && rawLink.charAt(1) == '/')) {
+                            continue;
+                        }
+                        
+                        String fullLink = constructLink(rawLink, curr, uInfo).trim();
+                        if (fullLink == null || fullLink.equals(curr)) {
+                            continue;
+                        }
+                        
+                        newLinks.add(fullLink);
+                    }
+                }
+                
+                aws.saveOutgoingLinks(curr, newLinks);
+                
+             // download document
                 instance.downloads.incrementAndGet();
                 System.out.println("Downloading " + curr);
-                aws.savePage(curr, doc);
-                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
-                instance.incrHeadsSent();
+                aws.savePage(curr, page);
+//                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
+            }
+            
+            if (httpConn != null) {
+                httpConn.disconnect();
             }
             if (httpsConn != null) {
                 httpsConn.disconnect();
             }
-
-        } else {
-            idle.decrementAndGet();
-            return;
         }
 
-        // extract links from document
-        if (crawlable) {
-            // jsoup
-			// extract links
-			System.out.println("Extracting links from " + curr);
-			Document doc = null;
-			try {
-				doc = Jsoup.connect(curr).get();
-			} catch (IOException e) {
-				System.err.println("Error connecting to " + curr + " with JSoup. Continuing");
-			}
+        instance.inFlight.incrementAndGet();
+        collector.emit(new Values<Object>(newLinks));
+        idle.decrementAndGet();
+    }
 
-			if (doc != null) {
-				Elements linkElts = doc.select("a[href]");
-				for (Element elt : linkElts) {
-					String rawLink = elt.attributes().get("href");
-					String fullLink = linkBuilder(rawLink, curr, uInfo);
-					newLinks.add(fullLink.trim());
-				}
-			}
-			aws.saveOutgoingLinks(curr, newLinks);
-		}
-		
-		
-		instance.inFlight.incrementAndGet();
-		collector.emit(new Values<Object>(newLinks));
-		idle.decrementAndGet();
-	}
+    @Override
+    public void prepare(Map<String, String> stormConf, TopologyContext context, OutputCollector collector) {
+        this.collector = collector;
+    }
 
-	@Override
-	public void prepare(Map<String, String> stormConf, TopologyContext context, OutputCollector collector) {
-		this.collector = collector;
-	}
+    @Override
+    public void setRouter(IStreamRouter router) {
+        this.collector.setRouter(router);
+    }
 
-	@Override
-	public void setRouter(IStreamRouter router) {
-		this.collector.setRouter(router);
-	}
+    @Override
+    public Fields getSchema() {
+        return this.schema;
+    }
+    
+    public static String constructLink(String href, String curr, URLInfo info) {
+        StringBuilder sb = new StringBuilder();
+        
+        if (!href.startsWith("http://") && !href.startsWith("https://")) {
+            // relative link
+            if (href.charAt(0) == '/') {
+                // start from host
+                if (curr.startsWith("http://")) {
+                    sb.append("http://");
+                } else if (curr.startsWith("https://")) {
+                    sb.append("https://");
+                } else {
+                    // we don't want it
+                    return null;
+                }
+                
+                sb.append(info.getHostName());
+                sb.append(":");
+                sb.append(info.getPortNo());
+                sb.append(href);
+            } else {
+                // start from curr
+                sb.append(curr);
+                if (curr.charAt(curr.length() - 1) != '/') {
+                    sb.append('/');
+                }
 
-	@Override
-	public Fields getSchema() {
-		return this.schema;
-	}
+                sb.append(href);
+            }
+            
+        } else {
+            // absolute link
+            sb.append(curr);
+        }
+        
+        return sb.toString();
+    }
 
-	// Forms HTTP request for GET based on host and URL
-	// used in HTTP
-	public static String getRequest(String url, String hostname) {
-		StringBuilder sb = new StringBuilder();
-
-		sb.append("GET " + url + " HTTP/1.1\r\n");
-		sb.append("Host: " + hostname + "\r\n");
-		sb.append("User-Agent:" + XPathCrawler.USER_AGENT +"\r\n");
-		sb.append("Accept: text/html, text/xml, application/xml, */*+xml\r\n\r\n");
-
-		return sb.toString();
-	}
-
-	// If the link extracted is a local path, build up the absolute URL and return
-	// it
-	// Used in link extraction
-	public static String linkBuilder(String ogLink, String curr, URLInfo info) {
-		if (!ogLink.startsWith("http://") && !ogLink.startsWith("https://")) {
-
-			String[] linkPieces = ogLink.split("/");
-
-			StringBuilder linkSb = new StringBuilder();
-
-			if (curr.startsWith("http://")) {
-				linkSb.append("http://");
-			} else {
-				linkSb.append("https://");
-			}
-
-			if (linkPieces.length == 0) {
-				return ogLink;
-			}
-
-			if (linkPieces.length == 1 || !linkPieces[0].contains(".")) {
-
-				String filePath = info.getFilePath();
-				if (filePath.endsWith(".html")) {
-
-					String[] pathPieces = filePath.split("/");
-					StringBuilder fileSb = new StringBuilder();
-					for (int i = 0; i < pathPieces.length - 1; i++) {
-						fileSb.append(pathPieces[i]);
-						fileSb.append("/");
-					}
-
-					filePath = fileSb.toString();
-				}
-				linkSb.append(info.getHostName());
-				linkSb.append(":");
-				linkSb.append(info.getPortNo());
-				linkSb.append(filePath);
-				if (!filePath.endsWith("/")) {
-					linkSb.append("/");
-				}
-				linkSb.append(ogLink);
-			}
-
-			ogLink = linkSb.toString();
-		}
-
-		return ogLink;
-	}
-
-	// get the document for an HTTP link
+    // get the document for an HTTP link
     public static String getDocumentHttps(HttpsURLConnection conn, String url) {
+        try {
+            conn.setRequestMethod("GET");
+        } catch (ProtocolException e1) {
+            System.err.println("Error setting GET request method for " + url);
+            return null;
+        }
+
+        URLInfo info = new URLInfo(url);
+
+        conn.setRequestProperty("Host", info.getHostName());
+        conn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
+        conn.setRequestProperty("Accept", "text/plain");
+
+        int code;
+        try {
+            code = conn.getResponseCode();
+        } catch (IOException e) {
+            System.err.println("Error getting GET response code for " + url);
+            return null;
+        }
+        if (code >= 400) {
+            System.err.print(url + ": " + code + " ");
+            switch (code) {
+            case 400:
+                System.err.print("Bad request");
+                break;
+            case 404:
+                System.err.print("Content not found");
+                break;
+            case 406:
+                System.err.print("File type received was not HTML, XML or RSS");
+                break;
+            case 409:
+                System.err.print("CETS error. Check the format of your request");
+            default:
+                System.err.print("Other error. Developer needs to get off his ass and do some debugging");
+            }
+            System.err.println(" - Continuing");
+            return null;
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        InputStream input;
+        try {
+            input = conn.getInputStream();
+        } catch (IOException e) {
+            System.err.println("Error getting GET input stream for " + url);
+            return null;
+        }
+        InputStreamReader in = new InputStreamReader(input);
+        int i = 0;
+        try {
+            while (i != -1) {
+                i = in.read();
+                if (i != -1) {
+                    sb.append((char) i);
+                }
+
+                if (!in.ready()) {
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error getting GET response for " + url);
+            return null;
+        }
+
+        String body = sb.toString();
+
+        if (body.isEmpty()) {
+            try {
+                input.close();
+            } catch (IOException e) {
+                System.err.println("Error closing GET input stream for " + url);
+            }
+            return null;
+        }
+
+        return body;
+    }
+
+    // get the document for an HTTP link
+    public static String getDocument(HttpURLConnection conn, String url) {
         try {
             conn.setRequestMethod("GET");
         } catch (ProtocolException e1) {
@@ -376,88 +448,4 @@ public class DownloaderBolt implements IRichBolt {
 
         return body;
     }
-	
-	// get the document for an HTTP link
-	public static String getDocument(HttpURLConnection conn, String url) {
-		try {
-			conn.setRequestMethod("GET");
-		} catch (ProtocolException e1) {
-			System.err.println("Error setting GET request method for " + url);
-			return null;
-		}
-
-		URLInfo info = new URLInfo(url);
-
-		conn.setRequestProperty("Host", info.getHostName());
-		conn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
-		conn.setRequestProperty("Accept", "text/plain");
-
-		int code;
-		try {
-			code = conn.getResponseCode();
-		} catch (IOException e) {
-			System.err.println("Error getting GET response code for " + url);
-			return null;
-		}
-		if (code >= 400) {
-			System.err.print(url + ": ");
-			switch (code) {
-			case 400:
-				System.err.print("Bad request");
-				break;
-			case 404:
-				System.err.print("Content not found");
-				break;
-			case 406:
-				System.err.print("File type received was not HTML, XML or RSS");
-				break;
-			case 409:
-				System.err.print("CETS error. Check the format of your request");
-			default:
-				System.err.print("Other error. Developer needs to get off his ass and do some debugging");
-			}
-			System.err.println(" - Continuing");
-			return null;
-		}
-
-		StringBuilder sb = new StringBuilder();
-
-		InputStream input;
-		try {
-			input = conn.getInputStream();
-		} catch (IOException e) {
-			System.err.println("Error getting GET input stream for " + url);
-			return null;
-		}
-		InputStreamReader in = new InputStreamReader(input);
-		int i = 0;
-		try {
-			while (i != -1) {
-				i = in.read();
-				if (i != -1) {
-					sb.append((char) i);
-				}
-
-				if (!in.ready()) {
-					break;
-				}
-			}
-		} catch (IOException e) {
-			System.err.println("Error getting GET response for " + url);
-			return null;
-		}
-
-		String body = sb.toString();
-
-		if (body.isEmpty()) {
-			try {
-				input.close();
-			} catch (IOException e) {
-				System.err.println("Error closing GET input stream for " + url);
-			}
-			return null;
-		}
-
-		return body;
-	}
 }

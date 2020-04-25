@@ -18,8 +18,6 @@ import edu.upenn.cis.stormlite.Config;
 import edu.upenn.cis.stormlite.LocalCluster;
 import edu.upenn.cis.stormlite.Topology;
 import edu.upenn.cis.stormlite.TopologyBuilder;
-import edu.upenn.cis455.storage.AWSDatabase;
-import edu.upenn.cis455.storage.DBAPI;
 import edu.upenn.cis455.storage.RDS_Connection;
 import test.edu.upenn.cis.stormlite.TestWordCount;
 
@@ -105,8 +103,8 @@ public class XPathCrawler {
 
 	public static synchronized XPathCrawler getInstance() {
 		if (instance == null) {
-			if (startURL == null || baseDir == null || maxSize < 1) {
-				System.err.println("Required fields haven't been set");
+			if (startURL == null || maxSize < 1) {
+				System.err.println("Required fields haven't been set!!");
 			} else {
 				instance = new XPathCrawler();
 			}
@@ -117,8 +115,12 @@ public class XPathCrawler {
 	public static boolean allAreIdle() {
 		return URLSpout.isIdle() && CrawlerBolt.isIdle() && DownloaderBolt.isIdle() && FilterBolt.isIdle();
 	}
+	
+	public synchronized void access(String hostPort, long nextCheck) {
+	    lastAccessed.put(hostPort, nextCheck);
+	}
 
-    public void shutdown() {
+    public synchronized void shutdown() {
         quit.set(true);
         while (!allAreIdle())
             ;
@@ -136,10 +138,6 @@ public class XPathCrawler {
 
 	public static void setStartURL(String startURL) {
 		XPathCrawler.startURL = startURL;
-	}
-
-	public static void setDBDirectory(String baseDir) {
-		XPathCrawler.baseDir = baseDir;
 	}
 
 	public static void setMaxSize(long megabytes) {
@@ -179,22 +177,21 @@ public class XPathCrawler {
 	public static void main(String args[]) {
         System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.NoOpLog");
         
-        if (args.length < 3) {
+        if (args.length < 2) {
 			throw new IllegalArgumentException("Too few arguments!");
 		}
 		
 		setStartURL(args[0].trim());
-		setDBDirectory(args[1].trim());
-		setMaxSize(Long.parseLong(args[2].trim()));
+		setMaxSize(Long.parseLong(args[1].trim()));
 
-		if (args.length > 3) {
+		if (args.length > 2) {
 			// num of files
-			setMaxFiles(Long.parseLong(args[3].trim()));
+			setMaxFiles(Long.parseLong(args[2].trim()));
 		}
 
-		if (args.length > 4) {
+		if (args.length > 3) {
 			// monitor
-			setMonitor(args[4].trim());
+			setMonitor(args[3].trim());
 		}
 
 		urlSpout = new URLSpout();
@@ -208,13 +205,13 @@ public class XPathCrawler {
 
 		TopologyBuilder builder = new TopologyBuilder();
 
-		builder.setSpout(URL_SPOUT, urlSpout, 1);
+		builder.setSpout(URL_SPOUT, urlSpout, 5);
 		
-		builder.setBolt(ROBOTSTXT_BOLT, robotsTxtBolt, 3).shuffleGrouping(URL_SPOUT);
+		builder.setBolt(ROBOTSTXT_BOLT, robotsTxtBolt, 5).shuffleGrouping(URL_SPOUT);
 
-		builder.setBolt(CRAWLER_BOLT, crawlerBolt, 3).shuffleGrouping(ROBOTSTXT_BOLT);
+		builder.setBolt(CRAWLER_BOLT, crawlerBolt, 5).shuffleGrouping(ROBOTSTXT_BOLT);
 
-		builder.setBolt(DOWNLOADER_BOLT, downloaderBolt, 4).shuffleGrouping(CRAWLER_BOLT);
+		builder.setBolt(DOWNLOADER_BOLT, downloaderBolt, 5).shuffleGrouping(CRAWLER_BOLT);
 
 		builder.setBolt(FILTER_BOLT, filterBolt, 5).shuffleGrouping(DOWNLOADER_BOLT);
 

@@ -1,6 +1,8 @@
 package edu.upenn.cis455.crawler;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AccessCleaner extends Thread {
@@ -12,13 +14,15 @@ public class AccessCleaner extends Thread {
     // TODO: IMPORTANT - value stored in last access map should be (new Date().getTime() + delay)
     
     @Override
-    public void run() {
+    public synchronized void run() {
         while (flag.get()) {
-            for (String hostPort: instance.lastAccessed.keySet()) {
-                if (instance.lastAccessed.get(hostPort) < new Date().getTime()) {
-                    instance.lastAccessed.remove(hostPort);
-                }
-            }
+//            Set<String> keys = instance.lastAccessed.keySet();
+//            for (String hostPort: keys) {
+//                if (instance.lastAccessed.get(hostPort) < new Date().getTime()) {
+//                    instance.lastAccessed.remove(hostPort);
+//                }
+//            }
+            instance.lastAccessed = new HashMap<>();
             try {
                 Thread.sleep(45000);
             } catch (InterruptedException e) {

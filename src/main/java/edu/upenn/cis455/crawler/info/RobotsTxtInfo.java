@@ -186,7 +186,7 @@ public class RobotsTxtInfo {
 		}
 		
 		if (crawlDelays.get(key) == null) {
-			return 0;
+			return 1;
 		}
 		return crawlDelays.get(key);
 	}

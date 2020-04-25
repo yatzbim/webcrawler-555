@@ -81,10 +81,6 @@ public class FilterBolt implements IRichBolt {
 				continue;
 			}
 
-			if (!isDownloadable(link)) {
-				continue;
-			}
-
 			instance.frontier.add(link);
 		}
 		idle.decrementAndGet();
@@ -103,43 +99,6 @@ public class FilterBolt implements IRichBolt {
 	@Override
 	public Fields getSchema() {
 		return this.schema;
-	}
-
-	// determines whether a URL is downloadable
-	public static boolean isDownloadable(String url) {
-		if (url == null) {
-			return false;
-		}
-
-		if (!(url.endsWith(".xml") || url.endsWith(".html") || url.endsWith(".htm") || url.endsWith(".rss")
-				|| hasNoExtension(url))) {
-			return false;
-		}
-
-		return true;
-	}
-
-	// determines whether a URL has an extension
-	private static boolean hasNoExtension(String url) {
-		String[] pieces = url.split("/");
-
-		if (pieces.length == 1) {
-			return true;
-		}
-
-		String last = pieces[pieces.length - 1];
-
-		for (char c : last.toCharArray()) {
-			if (c == '.') {
-				String preceding = pieces[pieces.length - 2];
-				if (preceding.equals("")) {
-					return true;
-				}
-				return false;
-			}
-		}
-
-		return true;
 	}
 
 }

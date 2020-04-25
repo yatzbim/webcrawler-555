@@ -6,6 +6,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.Statement;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -74,10 +75,10 @@ public class RDS_Connection {
         }
         catch (SQLException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+//            e.printStackTrace();
         } catch (ClassNotFoundException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+//            e.printStackTrace();
         }
         
     }
@@ -99,16 +100,16 @@ public class RDS_Connection {
             }
             catch (SQLException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+//                e.printStackTrace();
             } catch (ClassNotFoundException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+//                e.printStackTrace();
             }
     
     }
     
     //Function to write hostnames and associtaed delay to CRAWLDELAY table
-    public void crawldelay_write(String hostname, int delay) {
+    public synchronized void crawldelay_write(String hostname, int delay) {
         
         try{
             Class.forName("com.mysql.cj.jdbc.Driver");  
@@ -123,10 +124,10 @@ public class RDS_Connection {
             }
             catch (SQLException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+//                e.printStackTrace();
             } catch (ClassNotFoundException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+//                e.printStackTrace();
             }
         
     }
@@ -149,10 +150,10 @@ public class RDS_Connection {
             }
             catch (SQLException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+//                e.printStackTrace();
             } catch (ClassNotFoundException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+//                e.printStackTrace();
             }
         
     
@@ -181,10 +182,10 @@ public class RDS_Connection {
             }
             catch (SQLException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+//                e.printStackTrace();
             } catch (ClassNotFoundException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+//                e.printStackTrace();
             }
         return false;       
     }
@@ -212,16 +213,16 @@ public class RDS_Connection {
             }
             catch (SQLException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+//                e.printStackTrace();
             } catch (ClassNotFoundException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+//                e.printStackTrace();
             }
             
         return false;}
     
     //Function to return crawldelay for a particular hostname
-    public int get_crawldelay(String hostname) {
+    public synchronized int get_crawldelay(String hostname) {
         
         try{
             Class.forName("com.mysql.cj.jdbc.Driver");  
@@ -239,10 +240,10 @@ public class RDS_Connection {
         }
         catch (SQLException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+//            e.printStackTrace();
         } catch (ClassNotFoundException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+//            e.printStackTrace();
         }
         
         return 0;
@@ -269,10 +270,10 @@ public class RDS_Connection {
         }
         catch (SQLException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+//            e.printStackTrace();
         } catch (ClassNotFoundException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+//            e.printStackTrace();
         }
         
         return 0;
@@ -293,10 +294,10 @@ public class RDS_Connection {
             }
             catch (SQLException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+//                e.printStackTrace();
             } catch (ClassNotFoundException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+//                e.printStackTrace();
             }
         
     }
@@ -315,10 +316,10 @@ public class RDS_Connection {
         }
         catch (SQLException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+//            e.printStackTrace();
         } catch (ClassNotFoundException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+//            e.printStackTrace();
         }
         
         return null;

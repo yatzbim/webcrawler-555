@@ -8,6 +8,8 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -60,21 +62,24 @@ public class RobotsTxtBolt implements IRichBolt {
 
     @Override
     public void execute(Tuple input) {
+//        System.out.println("Received by robots");
         idle.incrementAndGet();
-        
+
         instance.inFlight.decrementAndGet();
-        
+
         String curr = input.getStringByField("url").trim();
 
         String currRobotsTxt = null;
 
         URLInfo uInfo = new URLInfo(curr);
         String hostPort = uInfo.getHostName() + ":" + uInfo.getPortNo();
-        String robotsTxtSite = hostPort + "/robots.txt";     
-        
+        String robotsTxtSite = hostPort + "/robots.txt";
+
         int exists = XPathCrawler.rds.get_crawldelay(hostPort);
+
+//        System.out.println("Passed robots rds check");
         
-        if (exists <= 0) {
+        if (exists < 1) {
             if (curr.startsWith("http://")) {
                 robotsTxtSite = "http://" + robotsTxtSite;
                 // crawl http link
@@ -90,7 +95,7 @@ public class RobotsTxtBolt implements IRichBolt {
                     return;
                 }
                 if (currRobotsTxt == null) {
-                    System.out.println("Null robots.txt for " + curr + ". Continuing");
+                    System.out.println("Null robots.txt for " + hostPort + ". Continuing");
                     instance.inFlight.incrementAndGet();
                     collector.emit(new Values<Object>(curr));
                     idle.decrementAndGet();
@@ -111,7 +116,7 @@ public class RobotsTxtBolt implements IRichBolt {
                     return;
                 }
                 if (currRobotsTxt == null) {
-                    System.out.println("Null robots.txt for " + curr + ". Continuing");
+                    System.out.println("Null robots.txt for " + hostPort + ". Continuing");
                     instance.inFlight.incrementAndGet();
                     collector.emit(new Values<Object>(curr));
                     idle.decrementAndGet();
@@ -128,14 +133,18 @@ public class RobotsTxtBolt implements IRichBolt {
             List<String> allowed = rInfo.getAllowedLinks(XPathCrawler.USER_AGENT);
             List<String> disallowed = rInfo.getDisallowedLinks(XPathCrawler.USER_AGENT);
             int delay = rInfo.getCrawlDelay(XPathCrawler.USER_AGENT);
+//            System.out.println("DELAY FOR " + hostPort + " - " + delay + " - " + exists);
 
+            System.out.println("Retrieving robots.txt for " + uInfo.getHostName() + ":" + uInfo.getPortNo());
             XPathCrawler.rds.allowed_write(hostPort, allowed);
             XPathCrawler.rds.disallowed_write(hostPort, disallowed);
             XPathCrawler.rds.crawldelay_write(hostPort, delay);
+//            System.out.println("Passed robots rds write");
         }
         
+        instance.inFlight.incrementAndGet();
         collector.emit(new Values<Object>(curr));
-        
+        idle.decrementAndGet();
     }
 
     @Override
