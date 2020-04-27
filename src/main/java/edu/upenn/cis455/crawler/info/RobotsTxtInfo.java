@@ -8,12 +8,12 @@ import java.util.List;
   */
 public class RobotsTxtInfo {
 	
-	private HashMap<String,ArrayList<String>> disallowedLinks;
-	private HashMap<String,ArrayList<String>> allowedLinks;
+    HashMap<String,ArrayList<String>> disallowedLinks;
+	HashMap<String,ArrayList<String>> allowedLinks;
 	
-	private HashMap<String,Integer> crawlDelays;
-	private ArrayList<String> sitemapLinks;
-	private ArrayList<String> userAgents;
+	HashMap<String,Integer> crawlDelays;
+	ArrayList<String> sitemapLinks;
+	ArrayList<String> userAgents;
 	
 	public RobotsTxtInfo(){
 		disallowedLinks = new HashMap<String,ArrayList<String>>();
@@ -29,70 +29,61 @@ public class RobotsTxtInfo {
 	}
 	
 	public void parseRobotsTxt(String robotsTxt) {
-		String[] groups = robotsTxt.split("\r?\n\r?\n");
-		
 		// for each group:
 		// a) determine user agent(s)
 		// b) find allowed links
-		// c) find disallowed links
-		// d) find crawl delay
-		// e) find sitemap links
-		
-		for (String group : groups) {
-			
-			List<String> agents = new ArrayList<>();
-			
-			String[] lines = group.split("\r?\n");
-			for (String line : lines) {
-				if (line.startsWith("#")) {
-					continue;
-				}
-				
-				String[] keyVal = line.split(": ?");
-				if (keyVal.length != 2) {
-					continue;
-				}
-				
-				String key = keyVal[0].trim().toLowerCase();
-				String val = keyVal[1].trim().toLowerCase();
-				
-				switch(key) {
-					case "user-agent":
-						agents.add(val);
-						addUserAgent(val);
-						break;
-					case "allow":
-						for (String agent : agents) {
-							addAllowedLink(agent, val);
-						}
-						break;
-					case "disallow":
-						for (String agent : agents) {
-							addDisallowedLink(agent, val);
-						}
-						break;
-					case "crawl-delay":
-						for (String agent : agents) {
-							addCrawlDelay(agent, Integer.parseInt(val));
-						}
-						break;
-					case "sitemap":
-						addSitemapLink(val);
-				}
-			}
-		}
-	}
-	
+        // c) find disallowed links
+        // d) find crawl delay
+        // e) find sitemap links
+
+        String currAgent = null;
+
+        String[] lines = robotsTxt.split("\r?\n");
+        for (String line : lines) {
+            if (line.startsWith("#")) {
+                continue;
+            }
+
+            String[] keyVal = line.split(":\\s*");
+            if (keyVal.length != 2) {
+                continue;
+            }
+
+            String key = keyVal[0].trim().toLowerCase();
+
+            String[] strip = keyVal[1].split("\\s+", 2);
+            String val = strip[0].trim().toLowerCase();
+
+            switch (key) {
+            case "user-agent":
+                currAgent = val;
+                addUserAgent(val);
+                break;
+            case "allow":
+                 addAllowedLink(currAgent, val);
+                break;
+            case "disallow":
+                 addDisallowedLink(currAgent, val);
+                break;
+            case "crawl-delay":
+                 addCrawlDelay(currAgent, Integer.parseInt(val));
+                break;
+            case "sitemap":
+                addSitemapLink(val);
+            }
+        }
+    }
+
 	public boolean isAllowed(String userAgent, String path) {
-		if (!containsUserAgent(userAgent)) {
-			userAgent = "*";
-		}
-		
-		List<String> allowed = getAllowedLinks(userAgent);
-		List<String> disallowed = getDisallowedLinks(userAgent);
-		
-		return hasAllowedParent(allowed, path) || !hasDisallowedParent(disallowed, path);
-	}
+        if (!containsUserAgent(userAgent)) {
+            userAgent = "*";
+        }
+        
+        List<String> allowed = getAllowedLinks(userAgent);
+        List<String> disallowed = getDisallowedLinks(userAgent);
+        
+        return hasAllowedParent(allowed, path) || !hasDisallowedParent(disallowed, path);
+    }
 	
 	public boolean hasAllowedParent(List<String> allowed, String path) {
 		for (String allowance : allowed) {
