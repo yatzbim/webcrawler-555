@@ -7,6 +7,7 @@ import java.util.List;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
@@ -15,11 +16,15 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 
 public class AWSDatabase {
 
-    public static final String HTML_BUCKET = "url-html";
-    public static final String OUTURL_BUCKET = "url-outurls";
+    public static final String HTML_BUCKET = "urlcontent";
+    public static final String OUTURL_BUCKET = "outgoinglinks";
 
-    static AWSCredentials credentials = new BasicAWSCredentials("AKIATVR2G2SUD7XGUFPG",
-            "BibcYkzZmUktcmdLGLBWhejnqKkdJgPElKUzqBHa");
+    
+    public static final String aws_access_key_id = "ASIAZBMO5NPG3KBCJ576";
+    public static final String aws_secret_access_key = "at0DwKAf6qquHgqALyaV7udjfU4dat3iVGCvLlpe";
+    public static final String aws_session_token = "FwoGZXIvYXdzEAoaDO45PE88hfWIzyi2NiLGAT99Uq9IHowIa7ieOL69EpMbXPIMg5zStymzMQnQVtK5d2gWeIDqu63ln+kdufWWuwjuiWntsxK9TJe98p06pEMaiRzRE6c+vdYVYOL6WN4mcEi/+NV8v/FJUIqVRNpaN+Cp94j+1iFf5kJMR7+tT9Kad9xZCyiqHvy7iPWbhVFYgbGKIgXIziIqV0P95k4AdB4wc4gPRmr/h99hUcn/iRFOKDuF2O3PzPU9OANulGeY+xH6GG2wUWinjLF9qPLlPLiszqg/NSjxoLH1BTItU7EUX0cJnm9rrtpVjAAgNwW3qx2A+jwKeVoLfJX+etT9ny0m+fNvR1FhIIlb";
+    static AWSCredentials credentials = new BasicSessionCredentials(aws_access_key_id,
+            aws_secret_access_key, aws_session_token);
 
     // S3 client to access buckets
     static AmazonS3 s3Client = AmazonS3ClientBuilder
