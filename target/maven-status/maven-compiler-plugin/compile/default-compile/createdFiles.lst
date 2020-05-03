@@ -4,7 +4,6 @@ edu/upenn/cis455/crawler/CrawlerBolt.class
 edu/upenn/cis/stormlite/bolt/OutputCollector.class
 edu/upenn/cis455/frontend/XPathApp.class
 edu/upenn/cis/stormlite/TopologyContext.class
-edu/upenn/cis455/crawler/ChannelBolt.class
 test/edu/upenn/cis455/RunAllTests.class
 edu/upenn/cis455/crawler/XPathCrawlerFactory.class
 edu/upenn/cis455/crawler/RobotsTxtBolt.class
@@ -35,10 +34,11 @@ edu/upenn/cis/stormlite/TopologyBuilder.class
 edu/upenn/cis/stormlite/OutputFieldsDeclarer.class
 edu/upenn/cis/stormlite/Topology.class
 test/edu/upenn/cis/stormlite/WordCounter.class
+edu/upenn/cis455/crawler/AccessCleaner.class
 edu/upenn/cis/stormlite/tasks/BoltTask.class
 edu/upenn/cis455/crawler/info/RobotsTxtInfo.class
-edu/upenn/cis/stormlite/routers/FieldBased.class
 edu/upenn/cis/stormlite/tasks/SpoutTask.class
+edu/upenn/cis/stormlite/routers/FieldBased.class
 test/edu/upenn/cis/stormlite/TestWordCount.class
 edu/upenn/cis455/crawler/URLSpout.class
 edu/upenn/cis455/crawler/DownloaderBolt.class

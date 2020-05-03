@@ -16,22 +16,27 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 
 public class AWSDatabase {
 
-    public static final String HTML_BUCKET = "urlcontent";
-    public static final String OUTURL_BUCKET = "outgoinglinks";
+    public static final String HTML_BUCKET = "cis555-g17-datastore";
+    public static final String OUTURL_BUCKET = "g17outlinks";
 
     
-    public static final String aws_access_key_id = "ASIAZBMO5NPG3KBCJ576";
-    public static final String aws_secret_access_key = "at0DwKAf6qquHgqALyaV7udjfU4dat3iVGCvLlpe";
-    public static final String aws_session_token = "FwoGZXIvYXdzEAoaDO45PE88hfWIzyi2NiLGAT99Uq9IHowIa7ieOL69EpMbXPIMg5zStymzMQnQVtK5d2gWeIDqu63ln+kdufWWuwjuiWntsxK9TJe98p06pEMaiRzRE6c+vdYVYOL6WN4mcEi/+NV8v/FJUIqVRNpaN+Cp94j+1iFf5kJMR7+tT9Kad9xZCyiqHvy7iPWbhVFYgbGKIgXIziIqV0P95k4AdB4wc4gPRmr/h99hUcn/iRFOKDuF2O3PzPU9OANulGeY+xH6GG2wUWinjLF9qPLlPLiszqg/NSjxoLH1BTItU7EUX0cJnm9rrtpVjAAgNwW3qx2A+jwKeVoLfJX+etT9ny0m+fNvR1FhIIlb";
-    static AWSCredentials credentials = new BasicSessionCredentials(aws_access_key_id,
-            aws_secret_access_key, aws_session_token);
+    public static final String aws_access_key_id = "ASIAVOD6NBKXSITG2GG3";
+    public static final String aws_secret_access_key = "lo/zAneHd0i41b6JyOVexeov1ldGzNJPI+krEuCc";
+    public static final String aws_session_token = "FwoGZXIvYXdzEDsaDLO+6YYmuEfm/jyMxSLGAXpCgO89SPAbLedtBab3O48sD06Z/SgZtwtU0/piEIQBoZKyv2USTwf3/RwSW5GZlj0J6ytdBfXNPUYxj2HZriqlI4bpvCkuUAgo7kcszC1Lmi0wWNFcKLHDJbsp9Ny6QbbV5WqsqZCyuSOPG8zDZ4XjH8CrEgK9Tv4J//Ww77YpsnKsQGuV5lXZ92F7xJHoMY5vjAlW5nmUjgMnTLOQn5gaC/puVhW0hNshVV/W300YMY6lmFTammpZuBZY+5SQfL7xn4UdoCjx/rv1BTItTsUYeYqUavDXaSBBw4N6ov0+kRCN7sXz97KD1dU7x0ZOOfTY7CVesHZ4DI3s";
+    static AWSCredentials credentials = new BasicSessionCredentials(aws_access_key_id, aws_secret_access_key, aws_session_token);
 
     // S3 client to access buckets
-    static AmazonS3 s3Client = AmazonS3ClientBuilder
+ //   static AmazonS3 s3Client = AmazonS3ClientBuilder
+   //         .standard()
+   //         .withCredentials(new AWSStaticCredentialsProvider(credentials))
+   //         .withRegion(Regions.US_EAST_1)
+   //         .build();
+   //
+   static AmazonS3 s3Client = AmazonS3ClientBuilder
             .standard()
-            .withCredentials(new AWSStaticCredentialsProvider(credentials))
             .withRegion(Regions.US_EAST_1)
             .build();
+
 
     MessageDigest digest;
     

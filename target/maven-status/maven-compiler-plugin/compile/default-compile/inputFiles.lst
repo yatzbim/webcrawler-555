@@ -1,46 +1,46 @@
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/TopologyContext.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/xpathengine/XPathEngineFactory.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/crawler/URLSpout.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/crawler/DownloaderBolt.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/routers/RoundRobin.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/storage/RDS_Connection.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/tasks/BoltTask.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/tuple/Tuple.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/storage/DBWrapper.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/spout/SpoutOutputCollector.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/tasks/SpoutTask.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/crawler/info/URLInfo.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/crawler/XPathCrawlerFactory.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/xpathengine/XPathEngineImpl.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/tuple/Values.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/bolt/IRichBolt.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/test/edu/upenn/cis/stormlite/PrintBolt.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/test/edu/upenn/cis/stormlite/WordCounter.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/crawler/CrawlerBolt.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/xpathengine/XPathEngine.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/crawler/RobotsTxtBolt.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/crawler/FilterBolt.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/routers/IStreamRouter.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/spout/IRichSpout.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/test/edu/upenn/cis/stormlite/TestWordCount.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/Config.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/tuple/Fields.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/LocalCluster.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/OutputFieldsDeclarer.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/storage/DBAPI.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/crawler/info/RobotsTxtInfo.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/crawler/ChannelBolt.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/IStreamSource.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/bolt/OutputCollector.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/TopologyBuilder.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/crawler/MS1Crawler.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/bolt/BoltDeclarer.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/test/edu/upenn/cis/stormlite/WordSpout.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/frontend/XPathApp.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/storage/SetWrapper.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/IOutputCollector.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/routers/FieldBased.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/test/edu/upenn/cis455/RunAllTests.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/storage/AWSDatabase.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis/stormlite/Topology.java
-/Users/monah_jiller/eclipse-workspace/Web Crawler/src/main/java/edu/upenn/cis455/crawler/XPathCrawler.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/xpathengine/XPathEngineFactory.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/crawler/AccessCleaner.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/crawler/URLSpout.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/OutputFieldsDeclarer.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/spout/SpoutOutputCollector.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/tasks/SpoutTask.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/crawler/info/RobotsTxtInfo.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/test/edu/upenn/cis/stormlite/PrintBolt.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/IOutputCollector.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/bolt/OutputCollector.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/bolt/BoltDeclarer.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/crawler/CrawlerBolt.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/crawler/info/URLInfo.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/LocalCluster.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/test/edu/upenn/cis/stormlite/WordCounter.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/TopologyContext.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/frontend/XPathApp.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/routers/RoundRobin.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/tuple/Values.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/crawler/DownloaderBolt.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/storage/SetWrapper.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/storage/AWSDatabase.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/IStreamSource.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/Topology.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/test/edu/upenn/cis/stormlite/WordSpout.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/routers/FieldBased.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/xpathengine/XPathEngine.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/storage/DBAPI.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/spout/IRichSpout.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/Config.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/TopologyBuilder.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/storage/RDS_Connection.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/bolt/IRichBolt.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/crawler/RobotsTxtBolt.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/crawler/XPathCrawlerFactory.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/xpathengine/XPathEngineImpl.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/tuple/Tuple.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/tuple/Fields.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/crawler/MS1Crawler.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/crawler/FilterBolt.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/routers/IStreamRouter.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis/stormlite/tasks/BoltTask.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/test/edu/upenn/cis455/RunAllTests.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/test/edu/upenn/cis/stormlite/TestWordCount.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/storage/DBWrapper.java
+/home/ubuntu/crawler/webcrawler-555/src/main/java/edu/upenn/cis455/crawler/XPathCrawler.java
