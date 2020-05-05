@@ -161,6 +161,8 @@ public class DownloaderBolt implements IRichBolt {
             Document doc = null;
             try {
                 doc = Jsoup.connect(curr).get();
+		doc.getElementsByClass("header").remove();
+		doc.getElementsByClass("footer").remove();
             } catch (IOException e) {
                 System.err.println("Error connecting to " + curr + " with JSoup. Continuing");
             }
