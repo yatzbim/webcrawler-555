@@ -167,7 +167,10 @@ public class CrawlerBolt implements IRichBolt {
 //            System.out.println("Passed crawler rds 1");
 
             // since we've waited long enough, update the last access
-            instance.access(hostPort, new Date().getTime() + (delay * 1000));
+            synchronized (XPathCrawler.accessLock) {
+                System.out.println("New Access: " + hostPort);
+                instance.lastAccessed.put(hostPort, new Date().getTime() + (delay * 1000));
+            }
 
             // check if it's allowed
             boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());

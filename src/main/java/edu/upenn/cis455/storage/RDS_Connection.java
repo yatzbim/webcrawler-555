@@ -88,7 +88,7 @@ public class RDS_Connection {
 //        System.out.println(disallowed_paths + " " + disallowed_paths.size());
         try{
             Class.forName("com.mysql.cj.jdbc.Driver");  
-            Connection conn = DriverManager.getConnection(connection_string, username , password);
+            Connection conn = DriverManager.getConnection(connection_string, username, password);
                     
              Statement st = conn.createStatement(); 
              for (String path: disallowed_paths) {
