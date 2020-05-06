@@ -148,11 +148,12 @@ public class CrawlerBolt implements IRichBolt {
 
             // only enter this conditional if a robots.txt exists
             
-
             boolean delayAllows = true;
-            long now = new Date().getTime();
-            if (instance.lastAccessed.get(hostPort) != null && instance.lastAccessed.get(hostPort) > now) {
-                delayAllows = false;
+            synchronized (XPathCrawler.accessLock) {
+                if (instance.lastAccessed.containsKey(hostPort) && instance.lastAccessed.get(hostPort) > new Date().getTime()) {
+                    System.out.println("Delaying (http)");
+                    delayAllows = false;
+                }
             }
 
             if (!delayAllows) {
@@ -230,7 +231,7 @@ public class CrawlerBolt implements IRichBolt {
                     System.err.print("Content not found");
                     break;
                 case 406:
-                    System.err.print("File type received was not HTML, XML or RSS");
+                    System.err.print("File type received was not HTML or was not English");
                     break;
                 case 409:
                     System.err.print("CETS error. Check the format of your request");
@@ -243,7 +244,6 @@ public class CrawlerBolt implements IRichBolt {
                 return;
             }
 
-            // TODO: change downloads to html only
             boolean downloadable = true;
 
             // determine content length
@@ -261,7 +261,7 @@ public class CrawlerBolt implements IRichBolt {
                 contentType = contentType.split(";")[0];
             }
 
-            downloadable = contentType != null && contentType.endsWith("/html");
+            downloadable = downloadable && contentType != null && contentType.endsWith("/html");
 
             boolean crawlable = contentType != null && contentType.endsWith("/html");
 
@@ -307,35 +307,38 @@ public class CrawlerBolt implements IRichBolt {
                 return;
             }
 
-            
-                // TODO: should this be more specific? There could be a robots.txt with no delay
-                boolean delayAllows = true;
-                long now = new Date().getTime();
-                if (instance.lastAccessed.get(hostPort) != null && instance.lastAccessed.get(hostPort) > now) {
+            boolean delayAllows = true;
+            synchronized (XPathCrawler.accessLock) {
+                if (instance.lastAccessed.get(hostPort) != null && instance.lastAccessed.get(hostPort) > new Date().getTime()) {
+                    System.out.println("Delaying (https)");
                     delayAllows = false;
                 }
+            }
 
-                if (!delayAllows) {
-                    instance.frontier.add(curr);
-                    httpsConn.disconnect();
-                    idle.decrementAndGet();
-                    return;
-                }
+            if (!delayAllows) {
+                instance.frontier.add(curr);
+                httpsConn.disconnect();
+                idle.decrementAndGet();
+                return;
+            }
 
-                // check if it's allowed
-                boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
-                boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
-                if (isDisallowed && !isAllowed) {
-                    System.out.println("Not permitted to crawl " + curr + ". Continuing");
-                    XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
-                    httpsConn.disconnect();
-                    idle.decrementAndGet();
-                    return;
-                }
+            // check if it's allowed
+            boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
+            boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
+            if (isDisallowed && !isAllowed) {
+                System.out.println("Not permitted to crawl " + curr + ". Continuing");
+                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
+                httpsConn.disconnect();
+                idle.decrementAndGet();
+                return;
+            }
 
-                int delay = XPathCrawler.rds.get_crawldelay(hostPort);
-                // since we've waited long enough, update the last access
+            int delay = XPathCrawler.rds.get_crawldelay(hostPort);
+            // since we've waited long enough, update the last access
+            synchronized (XPathCrawler.accessLock) {
+                System.out.println("New Access: " + hostPort);
                 instance.lastAccessed.put(hostPort, new Date().getTime() + (delay * 1000));
+            }
 
             // send HEAD request
             try {
@@ -369,7 +372,7 @@ public class CrawlerBolt implements IRichBolt {
                 XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
                 instance.frontier.add(location);
                 System.out.println("Redirection of type " + hCode + " found from " + curr + " to " + location);
-                
+
                 httpsConn.disconnect();
                 idle.decrementAndGet();
                 return;
@@ -387,12 +390,12 @@ public class CrawlerBolt implements IRichBolt {
                     System.err.print("Content not found");
                     break;
                 case 406:
-                    System.err.print("File type received was not HTML, XML or RSS");
+                    System.err.print("File type received was not HTML or was not English");
                     break;
                 case 409:
                     System.err.print("CETS error. Check the format of your request");
                 default:
-                    System.err.print(hCode + ". Developer needs to get off his ass and do some debugging");
+                    System.err.print(": Developer needs to get off his ass and do some debugging");
                 }
                 System.err.println(" - Continuing");
                 httpsConn.disconnect();
@@ -410,19 +413,23 @@ public class CrawlerBolt implements IRichBolt {
             }
 
             // determine content type
+            String contentType = null;
+            if (httpsConn.getContentType() != null) {
+                contentType = httpsConn.getContentType().split(";")[0];
+            }
+            
+            downloadable = downloadable && contentType != null && contentType.endsWith("/html");
 
-            String contentType = httpsConn.getContentType().split(";")[0];
-
-            downloadable = contentType.endsWith("/html");
-
-            boolean crawlable = contentType.endsWith("/html");
+            boolean crawlable = contentType != null && contentType.endsWith("/html");
 
             if (!downloadable) {
                 System.out.println(curr + " is not an HTML doc - not downloading or crawling");
+                idle.decrementAndGet();
+                return;
             }
 
             // determine whether document has already been crawled
-            long lastMod = httpsConn.getLastModified();
+//            long lastMod = httpsConn.getLastModified();
 
             // determine whether doc has already been downloaded
             
@@ -468,8 +475,10 @@ public class CrawlerBolt implements IRichBolt {
     }
     
     
-//    public static void main(String[] args) {
+    public static void main(String[] args) {
+        RDS_Connection rds = new RDS_Connection("testingdb.cu7l2h9ybbex.us-east-1.rds.amazonaws.com", "3306", "CIS455_newdb", "admin", "cis455crawler");
 //        String s = "https://en.wikipedia.org/wiki/Main_Page";
 //        System.out.println(RDS_Connection.digest("SHA-256", s));
-//    }
+        System.out.println(rds.check_disallow("www.reddit.com:443", "/filler.embed"));
+    }
 }

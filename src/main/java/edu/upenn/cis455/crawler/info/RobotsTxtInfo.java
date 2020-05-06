@@ -44,7 +44,7 @@ public class RobotsTxtInfo {
                 continue;
             }
 
-            String[] keyVal = line.split(":\\s*");
+            String[] keyVal = line.split(":\\s+");
             if (keyVal.length != 2) {
                 continue;
             }
@@ -52,7 +52,7 @@ public class RobotsTxtInfo {
             String key = keyVal[0].trim().toLowerCase();
 
             String[] strip = keyVal[1].split("\\s+", 2);
-            String val = strip[0].trim().toLowerCase();
+            String val = strip[0].trim();
 
             switch (key) {
             case "user-agent":

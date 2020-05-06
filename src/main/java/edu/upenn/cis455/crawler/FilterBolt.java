@@ -68,19 +68,27 @@ public class FilterBolt implements IRichBolt {
 			return;
 		}
 		
-		
-
 		for (String link : links) {
+		    // make sure its an http or https link
 			if (!link.startsWith("http://") && !link.startsWith("https://")) {
 				continue;
 			}
 
-			try {
-				new URL(link);
-			} catch (MalformedURLException e) {
-				continue;
+			// make sure it's a valid URL
+            try {
+                new URL(link);
+            } catch (MalformedURLException e) {
+                continue;
+            }
+			
+			// too many ../../.. is annoying, and make us download same page under different URLs
+			// filter 'em out
+			String noQuery = link.split("\\?")[0];
+			String[] dotDots = noQuery.split("\\.\\.");
+			if (dotDots.length > 5) {
+			    continue;
 			}
-
+			
 			instance.frontier.add(link);
 		}
 		idle.decrementAndGet();

@@ -46,7 +46,8 @@ public class XPathCrawler {
 	public static final String TOPOLOGY_NAME = "test";
 	public static final String USER_AGENT = "cis455crawler";
 	public static final RDS_Connection rds = new RDS_Connection("testingdb.cu7l2h9ybbex.us-east-1.rds.amazonaws.com", "3306", "CIS455_newdb", "admin", "cis455crawler");
-
+	public static final Object accessLock = new Object();
+	
 	static XPathCrawler instance = null;
 
 	static String startURL = null;
@@ -122,8 +123,8 @@ public class XPathCrawler {
 
     public synchronized void shutdown() {
         quit.set(true);
-        while (!allAreIdle())
-            ;
+//        while (!allAreIdle())
+//            ;
         AccessCleaner.flag.set(false);
         cluster.killTopology(TOPOLOGY_NAME);
         cluster.shutdown();
@@ -205,17 +206,15 @@ public class XPathCrawler {
 
 		TopologyBuilder builder = new TopologyBuilder();
 
-		builder.setSpout(URL_SPOUT, urlSpout, 5);
+		builder.setSpout(URL_SPOUT, urlSpout, 2);
 		
-		builder.setBolt(ROBOTSTXT_BOLT, robotsTxtBolt, 5).shuffleGrouping(URL_SPOUT);
+		builder.setBolt(ROBOTSTXT_BOLT, robotsTxtBolt, 2).shuffleGrouping(URL_SPOUT);
 
-		builder.setBolt(CRAWLER_BOLT, crawlerBolt, 5).shuffleGrouping(ROBOTSTXT_BOLT);
+		builder.setBolt(CRAWLER_BOLT, crawlerBolt, 2).shuffleGrouping(ROBOTSTXT_BOLT);
 
-		builder.setBolt(DOWNLOADER_BOLT, downloaderBolt, 5).shuffleGrouping(CRAWLER_BOLT);
+		builder.setBolt(DOWNLOADER_BOLT, downloaderBolt, 2).shuffleGrouping(CRAWLER_BOLT);
 
-		builder.setBolt(FILTER_BOLT, filterBolt, 5).shuffleGrouping(DOWNLOADER_BOLT);
-
-//		builder.setBolt(CHANNEL_BOLT, channelBolt, 5).shuffleGrouping(FILTER_BOLT);
+		builder.setBolt(FILTER_BOLT, filterBolt, 2).shuffleGrouping(DOWNLOADER_BOLT);
 
 		cluster = new LocalCluster();
 		topo = builder.createTopology();

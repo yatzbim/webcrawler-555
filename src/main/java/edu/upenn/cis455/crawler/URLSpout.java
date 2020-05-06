@@ -69,14 +69,21 @@ public class URLSpout implements IRichSpout {
 				String curr = instance.frontier.poll();
 				
 				URLInfo uInfo = new URLInfo(curr);
-		        if (uInfo.getHostName().contains("google")
-		                || (uInfo.getHostName().contains("wikipedia") && uInfo.getFilePath().contains("&action=edit"))) {
-		            idle.decrementAndGet();
-		            return;
-		        }
+
+                try {
+                    if (uInfo.getHostName().contains("google") || (uInfo.getHostName().contains("wikipedia")
+                            && uInfo.getFilePath().contains("&action=edit"))) {
+                        idle.decrementAndGet();
+                        return;
+                    }
+				} catch (NullPointerException e) {
+				    System.out.println("NULL IN SPOUT: " + uInfo.getHostName() + " " + uInfo.getPortNo() + " " + uInfo.getFilePath());
+				    return;
+				}
+		        
 				
 				if (XPathCrawler.rds.get_crawltime(curr) > 0) {
-				    System.out.println("Found er again cap'n");
+				    System.out.println("Already seen " + curr + " - not crawling");
 		            idle.decrementAndGet();
 		            return;
 		        }

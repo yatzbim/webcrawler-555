@@ -62,7 +62,6 @@ public class RobotsTxtBolt implements IRichBolt {
 
     @Override
     public void execute(Tuple input) {
-//        System.out.println("Received by robots");
         idle.incrementAndGet();
 
         instance.inFlight.decrementAndGet();
@@ -76,8 +75,6 @@ public class RobotsTxtBolt implements IRichBolt {
         String robotsTxtSite = hostPort + "/robots.txt";
 
         int exists = XPathCrawler.rds.get_crawldelay(hostPort);
-
-//        System.out.println("Passed robots rds check");
         
         if (exists < 1) {
             if (curr.startsWith("http://")) {
@@ -235,17 +232,11 @@ public class RobotsTxtBolt implements IRichBolt {
             return null;
         }
         InputStreamReader in = new InputStreamReader(input);
-        int i = 0;
         try {
+            int i = in.read();
             while (i != -1) {
+                sb.append((char) i);
                 i = in.read();
-                if (i != -1) {
-                    sb.append((char) i);
-                }
-
-                if (!in.ready()) {
-                    break;
-                }
             }
         } catch (IOException e) {
             System.err.println("Error getting robots.txt response for " + robotsTxtHost);
@@ -349,17 +340,11 @@ public class RobotsTxtBolt implements IRichBolt {
             return null;
         }
         InputStreamReader in = new InputStreamReader(input);
-        int i = 0;
         try {
+            int i = in.read();
             while (i != -1) {
+                sb.append((char) i);
                 i = in.read();
-                if (i != -1) {
-                    sb.append((char) i);
-                }
-
-                if (!in.ready()) {
-                    break;
-                }
             }
         } catch (IOException e) {
             System.err.println("Error getting robots.txt response for " + robotsTxtHost);
@@ -390,4 +375,9 @@ public class RobotsTxtBolt implements IRichBolt {
         return robotsResponse;
     }
     
+    
+    public static void main(String[] args) throws UnknownHostException {
+        String robots = getHttpsRobotsTxt("en.wikipedia.org:443");
+        System.out.println(robots);
+    }
 }

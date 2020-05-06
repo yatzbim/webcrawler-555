@@ -34,6 +34,7 @@ import edu.upenn.cis.stormlite.tuple.Values;
 import edu.upenn.cis455.crawler.info.URLInfo;
 import edu.upenn.cis455.storage.AWSDatabase;
 
+@SuppressWarnings("deprecation")
 public class DownloaderBolt implements IRichBolt {
     static Logger log = Logger.getLogger(CrawlerBolt.class);
     String executorId = UUID.randomUUID().toString();
@@ -92,12 +93,12 @@ public class DownloaderBolt implements IRichBolt {
 
         String curr = input.getStringByField("url");
         boolean downloadable = (boolean) input.getObjectByField("downloadable");
-//        boolean crawlable = (boolean) input.getObjectByField("crawlable");
+        // boolean crawlable = (boolean) input.getObjectByField("crawlable");
 
         URLInfo uInfo = new URLInfo(curr);
 
         List<String> newLinks = new LinkedList<>();
-        
+
         String page = null;
 
         if (downloadable) {
@@ -151,7 +152,7 @@ public class DownloaderBolt implements IRichBolt {
                     idle.decrementAndGet();
                     return;
                 }
-                
+
             } else {
                 idle.decrementAndGet();
                 return;
@@ -160,24 +161,23 @@ public class DownloaderBolt implements IRichBolt {
             // jsoup
             Document doc = null;
             try {
-                doc = Jsoup.connect(curr).get();
-		doc.getElementsByClass("header").remove();
-		doc.getElementsByClass("footer").remove();
+                doc = Jsoup.connect(curr).userAgent("cis455crawler").get();
+                doc.getElementsByClass("header").remove();
+                doc.getElementsByClass("footer").remove();
             } catch (IOException e) {
                 System.err.println("Error connecting to " + curr + " with JSoup. Continuing");
             }
-            
+
             String text = null;
             LanguageIdentifier object = null;
             if (doc != null) {
                 text = doc.text();
                 object = new LanguageIdentifier(text);
             }
-            
-            
+
             downloadable = XPathCrawler.rds.get_crawltime(curr) == 0;
             XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
-            
+
             if (object != null && !object.getLanguage().equals("en") && object.isReasonablyCertain()) {
                 System.out.println(curr + " is not an english page.");
                 if (httpConn != null) {
@@ -195,28 +195,30 @@ public class DownloaderBolt implements IRichBolt {
                     Elements linkElts = doc.select("a[href]");
                     for (Element elt : linkElts) {
                         String rawLink = elt.attributes().get("href").trim();
-                        if (rawLink.charAt(0) == '#' || (rawLink.length() > 1 && rawLink.charAt(0) == '/' && rawLink.charAt(1) == '/')) {
+                        if (rawLink.charAt(0) == '#'
+                                || (rawLink.length() > 1 && rawLink.charAt(0) == '/' && rawLink.charAt(1) == '/')
+                                || rawLink.startsWith("mailto:")) {
                             continue;
                         }
                         
-                        String fullLink = constructLink(rawLink, curr, uInfo).trim();
-                        if (fullLink == null || fullLink.equals(curr)) {
+                        String fullLink = constructLink(rawLink, curr, uInfo);
+                        if (fullLink == null || fullLink.trim().equals(curr)) {
                             continue;
                         }
-                        
+
                         newLinks.add(fullLink);
                     }
                 }
-                
+
                 aws.saveOutgoingLinks(curr, newLinks);
-                
-             // download document
+
+                // download document
                 instance.downloads.incrementAndGet();
                 System.out.println("Downloading " + curr);
                 aws.savePage(curr, page);
-//                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
+                // XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
             }
-            
+
             if (httpConn != null) {
                 httpConn.disconnect();
             }
@@ -244,10 +246,23 @@ public class DownloaderBolt implements IRichBolt {
     public Fields getSchema() {
         return this.schema;
     }
-    
+
     public static String constructLink(String href, String curr, URLInfo info) {
         StringBuilder sb = new StringBuilder();
         
+        if (href.contains("javascript:")) {
+            return null;
+        }
+        
+        String[] removeHashtag = href.split("#");
+        if (removeHashtag.length > 2) {
+            return null;
+        } else if (removeHashtag.length == 2 && removeHashtag[1].contains("/")) {
+            return null;
+        }
+        
+        href = removeHashtag[0];
+
         if (!href.startsWith("http://") && !href.startsWith("https://")) {
             // relative link
             if (href.charAt(0) == '/') {
@@ -260,27 +275,44 @@ public class DownloaderBolt implements IRichBolt {
                     // we don't want it
                     return null;
                 }
-                
+
                 sb.append(info.getHostName());
                 sb.append(":");
                 sb.append(info.getPortNo());
                 sb.append(href);
             } else {
-                // start from curr
-                sb.append(curr);
-                if (curr.charAt(curr.length() - 1) != '/') {
+                
+                String noQuery = curr.split("\\?")[0];
+                
+                String[] linkPieces = noQuery.split("/");
+                String bookend = linkPieces[linkPieces.length-1].split("\\?")[0];
+                if (bookend.contains(".")) {
+                    // last thing in path is a file, get rid of it before appending href
+                    for (int i = 0; i < linkPieces.length - 1; i++) {
+                        sb.append(linkPieces[i]);
+                        sb.append('/');
+                    }
+                } else if (curr.charAt(curr.length() - 1) != '/') {
+                    sb.append(curr);
                     sb.append('/');
                 }
 
                 sb.append(href);
             }
-            
+
         } else {
             // absolute link
             sb.append(curr);
         }
+
+        String fullLink = sb.toString();
         
-        return sb.toString();
+        // only checks links which are 50 directories deep
+        if (fullLink.split("/").length > 53) {
+            return null;
+        }
+        
+        return fullLink;
     }
 
     // get the document for an HTTP link
@@ -449,5 +481,23 @@ public class DownloaderBolt implements IRichBolt {
         }
 
         return body;
+    }
+    
+    public static void main(String[] args) throws IOException {
+//        String link = "https://www.reddit.com/";
+//        Document doc = Jsoup.connect(link)
+//                .userAgent("cis455crawler")
+//                .get();
+//        System.out.println(doc.toString());
+
+        String l = "https://www.apache.org:443/foundation/";
+        String[] removeHashtag = l.split("#");
+        if (removeHashtag.length > 2) {
+            System.out.println("3badsosad");
+        } else if (removeHashtag.length == 2 && removeHashtag[1].contains("/")) {
+            System.out.println("2 pieces");
+        }
+        
+        System.out.println(removeHashtag[0]);
     }
 }
