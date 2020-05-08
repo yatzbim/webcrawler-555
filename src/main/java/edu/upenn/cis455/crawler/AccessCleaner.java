@@ -1,6 +1,7 @@
 package edu.upenn.cis455.crawler;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.ConcurrentModificationException;
@@ -27,11 +28,20 @@ public class AccessCleaner extends Thread {
                 try {
                     Set<String> keys = instance.lastAccessed.keySet();
                     System.out.println("Cleaning old entries in crawltime map: " + keys.size());
-                    for (String hostPort: keys) {
+                    
+                    Set<String> removals = new HashSet<>();
+                    
+                    for (String hostPort : keys) {
                         if (instance.lastAccessed.get(hostPort) < new Date().getTime()) {
-                            instance.lastAccessed.remove(hostPort);
+                            removals.add(hostPort);
+//                            instance.lastAccessed.remove(hostPort);
                         }
                     }
+                    
+                    for (String hostPort : removals) {
+                        instance.lastAccessed.remove(hostPort);
+                    }
+                    
                 } catch (ConcurrentModificationException e) {
                     e.printStackTrace();
                     continue;

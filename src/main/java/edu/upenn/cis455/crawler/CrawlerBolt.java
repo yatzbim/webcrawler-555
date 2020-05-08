@@ -147,12 +147,12 @@ public class CrawlerBolt implements IRichBolt {
             // only enter this conditional if a robots.txt exists
             
             boolean delayAllows = true;
-            synchronized (XPathCrawler.accessLock) {
+//            synchronized (XPathCrawler.accessLock) {
                 if (instance.lastAccessed.containsKey(hostPort) && instance.lastAccessed.get(hostPort) > new Date().getTime()) {
 //                    System.out.println("Delaying (http)");
                     delayAllows = false;
                 }
-            }
+//            }
 
             if (!delayAllows) {
                 instance.frontier.add(curr);
@@ -310,12 +310,12 @@ public class CrawlerBolt implements IRichBolt {
             }
 
             boolean delayAllows = true;
-            synchronized (XPathCrawler.accessLock) {
+//            synchronized (XPathCrawler.accessLock) {
                 if (instance.lastAccessed.get(hostPort) != null && instance.lastAccessed.get(hostPort) > new Date().getTime()) {
 //                    System.out.println("Delaying (https)");
                     delayAllows = false;
                 }
-            }
+//            }
 
             if (!delayAllows) {
                 instance.frontier.add(curr);
