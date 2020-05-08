@@ -204,14 +204,13 @@ public class DownloaderBolt implements IRichBolt {
         
         href = removeHashtag[0];
 
+        // TODO: build out to more unwanted links
+        if ((info.getHostName().contains("wikipedia") && href.contains("index.php")) || href.contains("..")
+                || href.contains("twitter.com")) {
+            return null;
+        }
+        
         if (!href.startsWith("http://") && !href.startsWith("https://")) {
-            
-            // TODO: build out to more unwanted links
-            if ((info.getHostName().contains("wikipedia") && href.contains("index.php")) || href.contains("..")
-                    || href.contains("twitter.com")) {
-                return null;
-            }
-            
             // relative link
             if (href.charAt(0) == '/') {
                 // start from host
