@@ -33,6 +33,7 @@ public class AccessCleaner extends Thread {
                         }
                     }
                 } catch (ConcurrentModificationException e) {
+                    e.printStackTrace();
                     continue;
                 }
             }
