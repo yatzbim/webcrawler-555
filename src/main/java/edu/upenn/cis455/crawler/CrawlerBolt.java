@@ -206,7 +206,19 @@ public class CrawlerBolt implements IRichBolt {
             if (hCode >= 300 && hCode < 400) {
                 // handle redirect (3xx) response code
                 String location = httpConn.getHeaderField("Location");
+                if (XPathCrawler.rds.get_crawltime(curr) > 0) {
+                    httpConn.disconnect();
+                    idle.decrementAndGet();
+                    return;
+                }
+                
                 XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
+                if (curr.equals(location)) {
+                    httpConn.disconnect();
+                    idle.decrementAndGet();
+                    return;
+                }
+                
                 instance.frontier.add(location);
                 System.out.println("Redirection of type " + hCode + " found from " + curr + " to " + location);
                 httpConn.disconnect();
@@ -369,7 +381,20 @@ public class CrawlerBolt implements IRichBolt {
             if (hCode >= 300 && hCode < 400) {
                 // handle redirect (3xx) response code
                 String location = httpsConn.getHeaderField("Location");
+                
+                if (XPathCrawler.rds.get_crawltime(curr) > 0) {
+                    httpsConn.disconnect();
+                    idle.decrementAndGet();
+                    return;
+                }
+                
                 XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
+                if (curr.equals(location)) {
+                    httpsConn.disconnect();
+                    idle.decrementAndGet();
+                    return;
+                }
+                
                 instance.frontier.add(location);
                 System.out.println("Redirection of type " + hCode + " found from " + curr + " to " + location);
 

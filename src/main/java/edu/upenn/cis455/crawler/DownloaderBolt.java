@@ -102,7 +102,6 @@ public class DownloaderBolt implements IRichBolt {
         List<String> newLinks = new LinkedList<>();
         
         if (XPathCrawler.rds.get_crawltime(curr) == 0) {
-            System.out.println(curr);
             XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
             // jsoup
             Document doc = null;
