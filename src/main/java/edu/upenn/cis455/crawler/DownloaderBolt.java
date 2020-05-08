@@ -149,6 +149,10 @@ public class DownloaderBolt implements IRichBolt {
                         continue;
                     }
 
+                    if (fullLink.startsWith("http://www.imdb.com")) {
+                        fullLink = fullLink.replaceFirst("http:", "https:");
+                    }
+                    
                     newLinks.add(fullLink);
                 }
                 

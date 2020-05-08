@@ -98,6 +98,10 @@ public class FilterBolt implements IRichBolt {
                 System.out.println("Already seen " + link + " - not crawling");
                 continue;
             }
+            
+            if (link.startsWith("http://www.imdb.com")) {
+                link = link.replaceFirst("http:", "https:");
+            }
 			
 			instance.frontier.add(link);
 		}
@@ -117,6 +121,13 @@ public class FilterBolt implements IRichBolt {
 	@Override
 	public Fields getSchema() {
 		return this.schema;
+	}
+	
+	public static void main(String[] args) {
+	    String link = "http://www.imdb.com/pressroom/press_releases_ind/2012/12_20";
+	    if (link.startsWith("http://www.imdb.com")) {
+            link = link.replaceFirst("http:", "https:");
+        }
 	}
 
 }
