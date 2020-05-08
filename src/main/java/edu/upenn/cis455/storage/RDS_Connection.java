@@ -67,8 +67,9 @@ public class RDS_Connection {
                 
          Statement st = conn.createStatement(); 
          for (String path: allowed_paths) {
+        	 String temp_path = path.replace("*", "%");
              st.executeUpdate("INSERT INTO ALLOWS (ALLOWED, HOSTNAME) " + 
-                     "VALUES ('"+ path +"', '" + hostname +"')"); 
+                     "VALUES ('"+ temp_path +"', '" + hostname +"')"); 
          }
          conn.close(); 
 
@@ -92,8 +93,9 @@ public class RDS_Connection {
                     
              Statement st = conn.createStatement(); 
              for (String path: disallowed_paths) {
+            	 String temp_path = path.replace("*", "%");
                  st.executeUpdate("INSERT INTO DISALLOWS (DISALLOWED, HOSTNAME) " + 
-                         "VALUES ('"+ path +"', '" + hostname +"')"); 
+                         "VALUES ('"+ temp_path +"', '" + hostname +"')"); 
              }
              conn.close(); 
 
@@ -167,7 +169,7 @@ public class RDS_Connection {
             Connection conn = DriverManager.getConnection(connection_string, username , password);
                     
              Statement st = conn.createStatement(); 
-             String query = "SELECT ALLOWED FROM ALLOWS WHERE HOSTNAME='" + hostname +"' " + "AND ALLOWED='" + filepath + "'";
+             String query = "SELECT ALLOWED FROM ALLOWS WHERE HOSTNAME='" + hostname +"' " + "AND '" + filepath +"' LIKE ALLOWED" ;
              ResultSet rs = st.executeQuery(query);
              
              if (rs.next() == false) {
@@ -198,7 +200,7 @@ public class RDS_Connection {
             Connection conn = DriverManager.getConnection(connection_string, username , password);
                     
              Statement st = conn.createStatement(); 
-             String query = "SELECT DISALLOWED FROM DISALLOWS WHERE HOSTNAME='" + hostname + "' " + "AND DISALLOWED='" + filepath + "'";
+             String query = "SELECT DISALLOWED FROM DISALLOWS WHERE HOSTNAME='" + hostname + "' " + "AND '" + filepath +"' LIKE DISALLOWED" ;
              ResultSet rs = st.executeQuery(query);
              
              if (rs.next() == false) {

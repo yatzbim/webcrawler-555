@@ -31,8 +31,8 @@ edu/upenn/cis455/storage/DBWrapper.class
 edu/upenn/cis/stormlite/bolt/BoltDeclarer.class
 edu/upenn/cis455/crawler/FilterBolt.class
 edu/upenn/cis/stormlite/TopologyBuilder.class
-edu/upenn/cis/stormlite/OutputFieldsDeclarer.class
 edu/upenn/cis/stormlite/Topology.class
+edu/upenn/cis/stormlite/OutputFieldsDeclarer.class
 test/edu/upenn/cis/stormlite/WordCounter.class
 edu/upenn/cis455/crawler/AccessCleaner.class
 edu/upenn/cis/stormlite/tasks/BoltTask.class
@@ -44,8 +44,8 @@ edu/upenn/cis455/crawler/URLSpout.class
 edu/upenn/cis455/crawler/DownloaderBolt.class
 edu/upenn/cis/stormlite/routers/RoundRobin.class
 edu/upenn/cis/stormlite/tuple/Fields.class
-edu/upenn/cis455/storage/DBAPI$Unsubscribe.class
 edu/upenn/cis455/storage/DBAPI$DeleteChannel.class
+edu/upenn/cis455/storage/DBAPI$Unsubscribe.class
 edu/upenn/cis/stormlite/IStreamSource.class
 edu/upenn/cis/stormlite/spout/IRichSpout.class
 edu/upenn/cis/stormlite/bolt/IRichBolt.class
