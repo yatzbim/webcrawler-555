@@ -263,7 +263,7 @@ public class RDS_Connection {
              Statement st = conn.createStatement(); 
              String query = "SELECT CRAWLTIME FROM URLCRAWLTIME WHERE URLHASH='" + hashed_hostname +"'";
              ResultSet rs = st.executeQuery(query);
-             long time = 0;
+             long time = -1;
              while (rs.next()) {
                     time = rs.getLong("CRAWLTIME");
                 }

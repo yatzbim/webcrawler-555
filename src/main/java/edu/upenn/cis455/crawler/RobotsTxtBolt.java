@@ -76,7 +76,7 @@ public class RobotsTxtBolt implements IRichBolt {
 
         int exists = XPathCrawler.rds.get_crawldelay(hostPort);
         
-        if (exists < 1) {
+        if (exists < 0) {
             if (curr.startsWith("http://")) {
                 robotsTxtSite = "http://" + robotsTxtSite;
                 // crawl http link
@@ -86,6 +86,8 @@ public class RobotsTxtBolt implements IRichBolt {
                     currRobotsTxt = getHttpRobotsTxt(hostPort);
                 } catch (UnknownHostException e1) {
                     System.err.println("Failed to connect to http://" + hostPort + "/robots.txt");
+                    // TODO: add dummy robots.txt info
+                    XPathCrawler.rds.crawldelay_write(hostPort, 0);
                     instance.inFlight.incrementAndGet();
                     collector.emit(new Values<Object>(curr));
                     idle.decrementAndGet();
@@ -93,6 +95,8 @@ public class RobotsTxtBolt implements IRichBolt {
                 }
                 if (currRobotsTxt == null) {
                     System.out.println("Null robots.txt for " + hostPort + ". Continuing");
+                    // TODO: add dummy robots.txt info
+                    XPathCrawler.rds.crawldelay_write(hostPort, 0);
                     instance.inFlight.incrementAndGet();
                     collector.emit(new Values<Object>(curr));
                     idle.decrementAndGet();
@@ -107,6 +111,8 @@ public class RobotsTxtBolt implements IRichBolt {
                     currRobotsTxt = getHttpsRobotsTxt(hostPort);
                 } catch (UnknownHostException e1) {
                     System.err.println("Failed to connect to https://" + hostPort + "/robots.txt");
+                    // TODO: add dummy robots.txt info
+                    XPathCrawler.rds.crawldelay_write(hostPort, 0);
                     instance.inFlight.incrementAndGet();
                     collector.emit(new Values<Object>(curr));
                     idle.decrementAndGet();
@@ -114,6 +120,8 @@ public class RobotsTxtBolt implements IRichBolt {
                 }
                 if (currRobotsTxt == null) {
                     System.out.println("Null robots.txt for " + hostPort + ". Continuing");
+                    // TODO: add dummy robots.txt info
+                    XPathCrawler.rds.crawldelay_write(hostPort, 0);
                     instance.inFlight.incrementAndGet();
                     collector.emit(new Values<Object>(curr));
                     idle.decrementAndGet();

@@ -162,6 +162,9 @@ public class CrawlerBolt implements IRichBolt {
             }
             
             int delay = XPathCrawler.rds.get_crawldelay(hostPort);
+            if (delay == -1) {
+                delay = 0;
+            }
 
             // since we've waited long enough, update the last access
             synchronized (XPathCrawler.accessLock) {
@@ -336,6 +339,9 @@ public class CrawlerBolt implements IRichBolt {
             }
 
             int delay = XPathCrawler.rds.get_crawldelay(hostPort);
+            if (delay == -1) {
+                delay = 0;
+            }
             // since we've waited long enough, update the last access
             synchronized (XPathCrawler.accessLock) {
 //                System.out.println("New Access: " + hostPort);
