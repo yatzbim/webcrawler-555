@@ -101,13 +101,13 @@ public class FilterBolt implements IRichBolt {
                 continue;
             }
             
-            boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
-            boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
-            if (isDisallowed && !isAllowed) {
-//                System.out.println("Not permitted to crawl " + link + ". Continuing");
-                XPathCrawler.rds.crawltime_write(link, new Date().getTime());
-                continue;
-            }
+//            boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
+//            boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
+//            if (isDisallowed && !isAllowed) {
+////                System.out.println("Not permitted to crawl " + link + ". Continuing");
+//                XPathCrawler.rds.crawltime_write(link, new Date().getTime());
+//                continue;
+//            }
             
             if (link.startsWith("http://www.imdb.com") || link.startsWith("http://www.hulu.com")) {
                 link = link.replaceFirst("http:", "https:");
