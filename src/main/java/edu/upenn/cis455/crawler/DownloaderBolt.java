@@ -142,11 +142,10 @@ public class DownloaderBolt implements IRichBolt {
                             || rawLink.startsWith("mailto:")) {
                         continue;
                     }
-                    
 
                     String fullLink = constructLink(rawLink, curr, uInfo);
                     if (fullLink == null || fullLink.trim().equals(curr)) {
-//                        System.out.println("continuing: " + fullLink);
+//                        System.out.println("continuing: " + rawLink);
                         continue;
                     }
 
@@ -184,7 +183,6 @@ public class DownloaderBolt implements IRichBolt {
     }
 
     public static String constructLink(String href, String curr, URLInfo info) {
-//        System.out.println(href);
         StringBuilder sb = new StringBuilder();
         
         if (href.contains("javascript:")) {
@@ -205,8 +203,10 @@ public class DownloaderBolt implements IRichBolt {
         href = removeHashtag[0];
 
         // TODO: build out to more unwanted links
-        if ((info.getHostName().contains("wikipedia") && href.contains("index.php")) || href.contains("..")
-                || href.contains("twitter.com")) {
+//        System.out.println("HREF: " + href);
+        if (href.contains("twitter.com") || href.contains("facebook.com") || (href.contains("wikipedia") && href.contains("index.php"))
+                || href.contains("..")) {
+//            System.out.println("CUT BITCH: " + href);
             return null;
         }
         
