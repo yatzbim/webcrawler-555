@@ -69,9 +69,7 @@ public class RobotsTxtInfo {
                 try {
                     addCrawlDelay(currAgent, Integer.parseInt(val));
                 } catch (NumberFormatException e) {
-                    System.out.println(robotsTxt + "\n " + keyVal);
-                    e.printStackTrace();
-                    System.exit(0);
+                    continue;
                 }
                 break;
             case "sitemap":
