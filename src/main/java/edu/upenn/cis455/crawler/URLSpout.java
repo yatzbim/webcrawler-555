@@ -68,28 +68,30 @@ public class URLSpout implements IRichSpout {
 				// frontier is not empty
 				String curr = instance.frontier.poll();
 				
-				URLInfo uInfo = new URLInfo(curr);
-
-                try {
-                    if (uInfo.getHostName().contains("google") || (uInfo.getHostName().contains("wikipedia")
-                            && uInfo.getFilePath().contains("&action=edit"))) {
-                        idle.decrementAndGet();
-                        return;
-                    }
-				} catch (NullPointerException e) {
-				    System.out.println("NULL IN SPOUT: " + uInfo.getHostName() + " " + uInfo.getPortNo() + " " + uInfo.getFilePath());
+//				URLInfo uInfo = new URLInfo(curr);
+//                try {
+//                    if (uInfo.getHostName().contains("google") || (uInfo.getHostName().contains("wikipedia")
+//                            && (uInfo.getFilePath().contains("&action=edit") || uInfo.getFilePath().contains("title=Special:")))) {
+//                        idle.decrementAndGet();
+//                        return;
+//                    }
+//				} catch (NullPointerException e) {
+//				    System.out.println("NULL IN SPOUT: " + uInfo.getHostName() + " " + uInfo.getPortNo() + " " + uInfo.getFilePath());
+//				    return;
+//				}
+//		        
+//				
+//				if (XPathCrawler.rds.get_crawltime(curr) > 0) {
+//				    System.out.println("Already seen " + curr + " - not crawling");
+//		            idle.decrementAndGet();
+//		            return;
+//		        }
+				
+				if (curr == null) {
 				    return;
 				}
-		        
-				
-				if (XPathCrawler.rds.get_crawltime(curr) > 0) {
-				    System.out.println("Already seen " + curr + " - not crawling");
-		            idle.decrementAndGet();
-		            return;
-		        }
 
 				instance.inFlight.incrementAndGet();
-//				System.out.println("Emitted from spout");
 				this.collector.emit(new Values<Object>(curr.trim()));
 				idle.decrementAndGet();
 //			} else if (XPathCrawler.allAreIdle() && instance.inFlight.get() == 0) {
@@ -103,6 +105,13 @@ public class URLSpout implements IRichSpout {
 	@Override
 	public void setRouter(IStreamRouter router) {
 		this.collector.setRouter(router);
+	}
+	
+	public static void main(String[] args) {
+	    URLInfo uInfo = new URLInfo("https://www.amazon.com");
+	    System.out.println(uInfo.getHostName());
+	    System.out.println(uInfo.getPortNo());
+	    System.out.println(uInfo.getFilePath());
 	}
 
 }

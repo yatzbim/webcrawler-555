@@ -7,6 +7,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,6 +23,12 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.AnonymousAWSCredentials;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 
 import edu.upenn.cis.stormlite.OutputFieldsDeclarer;
 import edu.upenn.cis.stormlite.TopologyContext;
@@ -71,9 +78,8 @@ public class DownloaderBolt implements IRichBolt {
         return idle.get() == 0;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
-    public void execute(Tuple input) {
+    public synchronized void execute(Tuple input) {
         if (instance.shouldQuit()) {
             idle.set(0);
             return;
@@ -92,78 +98,23 @@ public class DownloaderBolt implements IRichBolt {
         HttpsURLConnection.setFollowRedirects(false);
 
         String curr = input.getStringByField("url");
-        boolean downloadable = (boolean) input.getObjectByField("downloadable");
-        // boolean crawlable = (boolean) input.getObjectByField("crawlable");
+//        boolean downloadable = (boolean) input.getObjectByField("downloadable");
 
         URLInfo uInfo = new URLInfo(curr);
 
         List<String> newLinks = new LinkedList<>();
 
-        String page = null;
-
-        if (downloadable) {
-            if (curr.startsWith("http://")) {
-                try {
-                    url = new URL(curr);
-                } catch (MalformedURLException e) {
-                    System.err.println("Bad HTTPS URL. Continuing");
-                    idle.decrementAndGet();
-                    return;
-                }
-
-                // send GET request
-                try {
-                    httpConn = (HttpURLConnection) url.openConnection();
-                } catch (IOException e) {
-                    System.err.println("Error connecting to " + curr + " for GET - continuing");
-                    idle.decrementAndGet();
-                    return;
-                }
-
-                page = getDocument(httpConn, curr);
-                if (page == null) {
-                    httpConn.disconnect();
-                    idle.decrementAndGet();
-                    return;
-                }
-
-            } else if (curr.startsWith("https://")) {
-                try {
-                    url = new URL(curr);
-                } catch (MalformedURLException e) {
-                    System.err.println("Bad HTTPS URL. Continuing");
-                    idle.decrementAndGet();
-                    return;
-                }
-
-                // send GET request
-                try {
-                    httpsConn = (HttpsURLConnection) url.openConnection();
-                } catch (IOException e) {
-                    System.err.println("Error connecting to " + curr + " for GET - continuing");
-                    idle.decrementAndGet();
-                    return;
-                }
-
-                page = getDocumentHttps(httpsConn, curr);
-                if (page == null) {
-                    httpsConn.disconnect();
-                    System.out.println("Error getting document from " + curr + " - continuing");
-                    idle.decrementAndGet();
-                    return;
-                }
-
-            } else {
-                idle.decrementAndGet();
-                return;
-            }
-
+//        boolean downloadable = XPathCrawler.rds.get_crawltime(curr) == 0;
+        
+        if (XPathCrawler.rds.get_crawltime(curr) == 0) {
+            XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
             // jsoup
             Document doc = null;
             try {
                 doc = Jsoup.connect(curr).userAgent("cis455crawler").get();
-                doc.getElementsByClass("header").remove();
+//                doc.getElementsByClass("header").remove();
                 doc.getElementsByClass("footer").remove();
+                doc.charset(Charset.forName("UTF-8"));
             } catch (IOException e) {
                 System.err.println("Error connecting to " + curr + " with JSoup. Continuing");
             }
@@ -175,55 +126,38 @@ public class DownloaderBolt implements IRichBolt {
                 object = new LanguageIdentifier(text);
             }
 
-            downloadable = XPathCrawler.rds.get_crawltime(curr) == 0;
-            XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
-
             if (object != null && !object.getLanguage().equals("en") && object.isReasonablyCertain()) {
                 System.out.println(curr + " is not an english page.");
-                if (httpConn != null) {
-                    httpConn.disconnect();
-                }
-                if (httpsConn != null) {
-                    httpsConn.disconnect();
-                }
                 idle.decrementAndGet();
                 return;
-            } else if (downloadable) {
-                // extract links
-                if (doc != null) {
-                    System.out.println("Extracting links from " + curr);
-                    Elements linkElts = doc.select("a[href]");
-                    for (Element elt : linkElts) {
-                        String rawLink = elt.attributes().get("href").trim();
-                        if (rawLink.charAt(0) == '#'
-                                || (rawLink.length() > 1 && rawLink.charAt(0) == '/' && rawLink.charAt(1) == '/')
-                                || rawLink.startsWith("mailto:")) {
-                            continue;
-                        }
-                        
-                        String fullLink = constructLink(rawLink, curr, uInfo);
-                        if (fullLink == null || fullLink.trim().equals(curr)) {
-                            continue;
-                        }
-
-                        newLinks.add(fullLink);
+            }
+            // extract links
+            if (doc != null) {
+                System.out.println("Extracting links from " + curr);
+                Elements linkElts = doc.select("a[href]");
+                for (Element elt : linkElts) {
+                    String rawLink = elt.attributes().get("href").trim();
+                    if (rawLink.isEmpty() || rawLink.charAt(0) == '#'
+                            || (rawLink.length() > 1 && rawLink.charAt(0) == '/' && rawLink.charAt(1) == '/')
+                            || rawLink.startsWith("mailto:")) {
+                        continue;
                     }
-                }
+                    
 
+                    String fullLink = constructLink(rawLink, curr, uInfo);
+                    if (fullLink == null || fullLink.trim().equals(curr)) {
+                        continue;
+                    }
+
+                    newLinks.add(fullLink);
+                }
+                
                 aws.saveOutgoingLinks(curr, newLinks);
 
                 // download document
                 instance.downloads.incrementAndGet();
                 System.out.println("Downloading " + curr);
-                aws.savePage(curr, page);
-                // XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
-            }
-
-            if (httpConn != null) {
-                httpConn.disconnect();
-            }
-            if (httpsConn != null) {
-                httpsConn.disconnect();
+                aws.savePage(curr, text);
             }
         }
 
@@ -264,6 +198,12 @@ public class DownloaderBolt implements IRichBolt {
         href = removeHashtag[0];
 
         if (!href.startsWith("http://") && !href.startsWith("https://")) {
+            
+            // TODO: build out to more unwanted links
+            if ((info.getHostName().contains("wikipedia") && href.contains("index.php")) || href.contains("..")) {
+                return null;
+            }
+            
             // relative link
             if (href.charAt(0) == '/') {
                 // start from host
@@ -277,24 +217,27 @@ public class DownloaderBolt implements IRichBolt {
                 }
 
                 sb.append(info.getHostName());
-                sb.append(":");
-                sb.append(info.getPortNo());
+                if (info.getPortNo() != 80 && info.getPortNo() != 443) {
+                    sb.append(":");
+                    sb.append(info.getPortNo());
+                }
                 sb.append(href);
             } else {
-                
                 String noQuery = curr.split("\\?")[0];
                 
                 String[] linkPieces = noQuery.split("/");
-                String bookend = linkPieces[linkPieces.length-1].split("\\?")[0];
-                if (bookend.contains(".")) {
+                String bookend = linkPieces[linkPieces.length-1];
+                if (!bookend.equals(info.getHostName()) && bookend.contains(".")) {
                     // last thing in path is a file, get rid of it before appending href
                     for (int i = 0; i < linkPieces.length - 1; i++) {
                         sb.append(linkPieces[i]);
                         sb.append('/');
                     }
-                } else if (curr.charAt(curr.length() - 1) != '/') {
-                    sb.append(curr);
-                    sb.append('/');
+                } else {
+                    sb.append(noQuery);
+                    if (noQuery.charAt(noQuery.length() - 1) != '/') {
+                        sb.append('/');
+                    }
                 }
 
                 sb.append(href);
@@ -484,20 +427,18 @@ public class DownloaderBolt implements IRichBolt {
     }
     
     public static void main(String[] args) throws IOException {
-//        String link = "https://www.reddit.com/";
-//        Document doc = Jsoup.connect(link)
-//                .userAgent("cis455crawler")
-//                .get();
+        String link = "https://www.amazon.com";
+        Document doc = Jsoup.connect(link)
+                .userAgent("cis455crawler")
+                .get();
 //        System.out.println(doc.toString());
-
-        String l = "https://www.apache.org:443/foundation/";
-        String[] removeHashtag = l.split("#");
-        if (removeHashtag.length > 2) {
-            System.out.println("3badsosad");
-        } else if (removeHashtag.length == 2 && removeHashtag[1].contains("/")) {
-            System.out.println("2 pieces");
-        }
         
-        System.out.println(removeHashtag[0]);
+        Elements linkElts = doc.select("a[href]");
+//        for (Element elt : linkElts) {
+////            String rawLink = elt.attributes().get("href").trim();
+////            String lang = elt.attributes().get("hreflang").trim();
+//            System.out.println(elt);
+//        }
+
     }
 }

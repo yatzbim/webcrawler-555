@@ -16,6 +16,7 @@ import edu.upenn.cis.stormlite.bolt.OutputCollector;
 import edu.upenn.cis.stormlite.routers.IStreamRouter;
 import edu.upenn.cis.stormlite.tuple.Fields;
 import edu.upenn.cis.stormlite.tuple.Tuple;
+import edu.upenn.cis455.crawler.info.URLInfo;
 
 public class FilterBolt implements IRichBolt {
 	static Logger log = Logger.getLogger(CrawlerBolt.class);
@@ -80,14 +81,23 @@ public class FilterBolt implements IRichBolt {
             } catch (MalformedURLException e) {
                 continue;
             }
-			
-			// too many ../../.. is annoying, and make us download same page under different URLs
-			// filter 'em out
-			String noQuery = link.split("\\?")[0];
-			String[] dotDots = noQuery.split("\\.\\.");
-			if (dotDots.length > 5) {
-			    continue;
-			}
+            
+            URLInfo uInfo = new URLInfo(link);
+            try {
+                if (uInfo.getHostName().contains("google") || (uInfo.getHostName().contains("wikipedia")
+                        && (uInfo.getFilePath().contains("&action=edit") || uInfo.getFilePath().contains("title=Special:")))) {
+                    continue;
+                }
+            } catch (NullPointerException e) {
+                System.out.println("NULL IN FILTER: " + uInfo.getHostName() + " " + uInfo.getPortNo() + " " + uInfo.getFilePath());
+                continue;
+            }
+            
+            
+            if (XPathCrawler.rds.get_crawltime(link) > 0) {
+                System.out.println("Already seen " + link + " - not crawling");
+                continue;
+            }
 			
 			instance.frontier.add(link);
 		}

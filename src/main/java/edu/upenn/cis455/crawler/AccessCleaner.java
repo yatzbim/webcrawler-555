@@ -23,8 +23,8 @@ public class AccessCleaner extends Thread {
                 e.printStackTrace();
             }
             
-            Set<String> keys = instance.lastAccessed.keySet();
             synchronized(XPathCrawler.accessLock) {
+                Set<String> keys = instance.lastAccessed.keySet();
                 System.out.println("Cleaning old entries in crawltime map: " + keys.size());
                 for (String hostPort: keys) {
                     if (instance.lastAccessed.get(hostPort) < new Date().getTime()) {

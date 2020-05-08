@@ -46,7 +46,7 @@ public class CrawlerBolt implements IRichBolt {
 
     static XPathCrawler instance = XPathCrawler.getInstance();
 
-    Fields schema = new Fields("url", "downloadable", "crawlable");
+    Fields schema = new Fields("url");
 
     OutputCollector collector;
 
@@ -80,8 +80,6 @@ public class CrawlerBolt implements IRichBolt {
             idle.set(0);
             return;
         }
-
-        
         
         idle.incrementAndGet();
 
@@ -151,7 +149,7 @@ public class CrawlerBolt implements IRichBolt {
             boolean delayAllows = true;
             synchronized (XPathCrawler.accessLock) {
                 if (instance.lastAccessed.containsKey(hostPort) && instance.lastAccessed.get(hostPort) > new Date().getTime()) {
-                    System.out.println("Delaying (http)");
+//                    System.out.println("Delaying (http)");
                     delayAllows = false;
                 }
             }
@@ -164,7 +162,6 @@ public class CrawlerBolt implements IRichBolt {
             }
             
             int delay = XPathCrawler.rds.get_crawldelay(hostPort);
-//            System.out.println("Passed crawler rds 1");
 
             // since we've waited long enough, update the last access
             synchronized (XPathCrawler.accessLock) {
@@ -174,13 +171,10 @@ public class CrawlerBolt implements IRichBolt {
 
             // check if it's allowed
             boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
-//            System.out.println("Passed crawler rds 2");
             boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
-//            System.out.println("Passed crawler rds 3");
             if (isDisallowed && !isAllowed) {
                 System.out.println("Not permitted to crawl " + curr + ". Continuing");
                 XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
-//                System.out.println("Passed crawler rds 4");
                 httpConn.disconnect();
                 idle.decrementAndGet();
                 return;
@@ -222,6 +216,7 @@ public class CrawlerBolt implements IRichBolt {
                 return;
             } else if (hCode >= 400) {
                 // handle error (4xx, 5xx) response code
+                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
                 System.err.print(curr + ": " + hCode + " ");
                 switch (hCode) {
                 case 400:
@@ -233,13 +228,16 @@ public class CrawlerBolt implements IRichBolt {
                 case 404:
                     System.err.print("Content not found");
                     break;
+                case 405:
+                    System.err.print("Not Allowed");
+                    break;
                 case 406:
                     System.err.print("File type received was not HTML or was not English");
                     break;
                 case 409:
                     System.err.print("CETS error. Check the format of your request");
                 default:
-                    System.err.print(hCode + ". Developer needs to get off his ass and do some debugging");
+                    System.err.print(": Developer needs to get off his ass and do some debugging");
                 }
                 System.err.println(" - Continuing");
                 httpConn.disconnect();
@@ -266,10 +264,11 @@ public class CrawlerBolt implements IRichBolt {
 
             downloadable = downloadable && contentType != null && contentType.endsWith("/html");
 
-            boolean crawlable = contentType != null && contentType.endsWith("/html");
-
             if (!downloadable) {
                 System.out.println(curr + " is not an HTML doc - not downloading or crawling");
+                httpConn.disconnect();
+                idle.decrementAndGet();
+                return;
             }
 
             // determine whether document has already been crawled
@@ -295,7 +294,7 @@ public class CrawlerBolt implements IRichBolt {
             httpConn.disconnect();
             instance.inFlight.incrementAndGet();
 
-            collector.emit(new Values<Object>(curr, downloadable, crawlable));
+            collector.emit(new Values<Object>(curr));
             idle.decrementAndGet();
         } else if (curr.startsWith("https://")) {
             // case to crawl HTTPS links
@@ -313,7 +312,7 @@ public class CrawlerBolt implements IRichBolt {
             boolean delayAllows = true;
             synchronized (XPathCrawler.accessLock) {
                 if (instance.lastAccessed.get(hostPort) != null && instance.lastAccessed.get(hostPort) > new Date().getTime()) {
-                    System.out.println("Delaying (https)");
+//                    System.out.println("Delaying (https)");
                     delayAllows = false;
                 }
             }
@@ -339,7 +338,7 @@ public class CrawlerBolt implements IRichBolt {
             int delay = XPathCrawler.rds.get_crawldelay(hostPort);
             // since we've waited long enough, update the last access
             synchronized (XPathCrawler.accessLock) {
-                System.out.println("New Access: " + hostPort);
+//                System.out.println("New Access: " + hostPort);
                 instance.lastAccessed.put(hostPort, new Date().getTime() + (delay * 1000));
             }
 
@@ -359,9 +358,6 @@ public class CrawlerBolt implements IRichBolt {
 
             instance.incrHeadsSent();
 
-            // TODO: add language support (only accept english, and boolean if language is
-            // known)
-
             int hCode = 0;
             try {
                 hCode = httpsConn.getResponseCode();
@@ -380,6 +376,7 @@ public class CrawlerBolt implements IRichBolt {
                 idle.decrementAndGet();
                 return;
             } else if (hCode >= 400) {
+                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
                 // handle error (4xx, 5xx) response code
                 System.err.print(curr + ": " + hCode + " ");
                 switch (hCode) {
@@ -391,6 +388,9 @@ public class CrawlerBolt implements IRichBolt {
                     break;
                 case 404:
                     System.err.print("Content not found");
+                    break;
+                case 405:
+                    System.err.print("Not Allowed");
                     break;
                 case 406:
                     System.err.print("File type received was not HTML or was not English");
@@ -423,8 +423,6 @@ public class CrawlerBolt implements IRichBolt {
             
             downloadable = downloadable && contentType != null && contentType.endsWith("/html");
 
-            boolean crawlable = contentType != null && contentType.endsWith("/html");
-
             if (!downloadable) {
                 System.out.println(curr + " is not an HTML doc - not downloading or crawling");
                 idle.decrementAndGet();
@@ -454,7 +452,7 @@ public class CrawlerBolt implements IRichBolt {
             
             httpsConn.disconnect();
             instance.inFlight.incrementAndGet();
-            collector.emit(new Values<Object>(curr, downloadable, crawlable));
+            collector.emit(new Values<Object>(curr));
             idle.decrementAndGet();
         } else {
             idle.decrementAndGet();
