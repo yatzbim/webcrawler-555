@@ -121,8 +121,8 @@ public class DownloaderBolt implements IRichBolt {
                 langResult = detector.detect(text);
             }
 
-            if (langResult != null && (!langResult.getLanguage().equals("en") && langResult.isReasonablyCertain())
-                    || (langResult.getLanguage().equals("en") && !langResult.isReasonablyCertain())) {
+            if (langResult != null && ((!langResult.getLanguage().equals("en") && langResult.isReasonablyCertain())
+                    || (langResult.getLanguage().equals("en") && !langResult.isReasonablyCertain()))) {
                 System.out.println(curr + " is not an english page.");
                 idle.decrementAndGet();
                 return;
