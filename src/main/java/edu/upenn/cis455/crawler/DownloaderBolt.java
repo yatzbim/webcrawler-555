@@ -121,7 +121,8 @@ public class DownloaderBolt implements IRichBolt {
                 langResult = detector.detect(text);
             }
 
-            if (langResult != null && !langResult.getLanguage().equals("en") && langResult.isReasonablyCertain()) {
+            if (langResult != null && (!langResult.getLanguage().equals("en") && langResult.isReasonablyCertain())
+                    || (langResult.getLanguage().equals("en") && !langResult.isReasonablyCertain())) {
                 System.out.println(curr + " is not an english page.");
                 idle.decrementAndGet();
                 return;
@@ -202,12 +203,14 @@ public class DownloaderBolt implements IRichBolt {
             // System.out.println("CUT BITCH: " + href);
             return null;
         }
+        
+        // TODO: handle stuff like http://arikaokrent.com/././././././././././././././././././././././././././././././././././././././././././././index.html
 
+        href = href.replace("./", "");
+        
         if (!href.startsWith("http://") && !href.startsWith("https://")) {
             // relative link
-            if (href.charAt(0) == '.' && href.charAt(1) == '/') {
-                href = href.substring(2);
-            }
+            href = href.replace("\\./", "");
 
             if (href.charAt(0) == '/') {
                 // start from host
@@ -262,7 +265,7 @@ public class DownloaderBolt implements IRichBolt {
     }
 
     public static void main(String[] args) throws IOException {
-        String link = "http://centraldeajuda.globo.com/Dicas-de-seguranca/Glossario/";
+        String link = "http://auto.163.com/photoview/294N0008/184052.html?from=tj_xytj#p=BJVCSJ7R294N0008";
         Document doc = Jsoup.connect(link)
                 .userAgent("cis455crawler")
                 .get();
@@ -277,16 +280,22 @@ public class DownloaderBolt implements IRichBolt {
         
         
         String text = null;
-//        LanguageIdentifier object = null;
+////        LanguageIdentifier object = null;
         if (doc != null) {
             text = doc.text();
 //            object = new LanguageIdentifier(text);
         }
-
+//
         LanguageDetector detector = new OptimaizeLangDetector().loadModels();
-        LanguageResult result = detector.detect(text);
-        System.out.println(result.getLanguage());
-        System.out.println(result.getConfidence());
-        System.out.println(result.isReasonablyCertain());
+        LanguageResult langResult = detector.detect(text);
+        System.out.println(langResult.getLanguage());
+        System.out.println(langResult.getConfidence());
+        System.out.println(langResult.isReasonablyCertain());
+        if (langResult != null && (!langResult.getLanguage().equals("en") && langResult.isReasonablyCertain())
+                || (langResult.getLanguage().equals("en") && !langResult.isReasonablyCertain())) {
+            System.out.println("yiff success");
+        }
+//        link = link.replace("./", "");
+//        System.out.println(link);
     }
 }
