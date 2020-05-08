@@ -95,11 +95,11 @@ public class FilterBolt implements IRichBolt {
             
             
             if (XPathCrawler.rds.get_crawltime(link) > 0) {
-                System.out.println("Already seen " + link + " - not crawling");
+//                System.out.println("Already seen " + link + " - not crawling");
                 continue;
             }
             
-            if (link.startsWith("http://www.imdb.com")) {
+            if (link.startsWith("http://www.imdb.com") || link.startsWith("http://www.hulu.com")) {
                 link = link.replaceFirst("http:", "https:");
             }
 			
