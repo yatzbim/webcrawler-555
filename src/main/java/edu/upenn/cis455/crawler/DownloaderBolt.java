@@ -113,7 +113,7 @@ public class DownloaderBolt implements IRichBolt {
             try {
                 doc = Jsoup.connect(curr).userAgent("cis455crawler").get();
 //                doc.getElementsByClass("header").remove();
-                doc.getElementsByClass("footer").remove();
+//                doc.getElementsByClass("footer").remove();
                 doc.charset(Charset.forName("UTF-8"));
             } catch (IOException e) {
                 System.err.println("Error connecting to " + curr + " with JSoup. Continuing");
@@ -146,12 +146,14 @@ public class DownloaderBolt implements IRichBolt {
 
                     String fullLink = constructLink(rawLink, curr, uInfo);
                     if (fullLink == null || fullLink.trim().equals(curr)) {
+//                        System.out.println("continuing: " + fullLink);
                         continue;
                     }
 
                     newLinks.add(fullLink);
                 }
                 
+//                System.out.println("here");
                 aws.saveOutgoingLinks(curr, newLinks);
 
                 // download document
@@ -182,11 +184,14 @@ public class DownloaderBolt implements IRichBolt {
     }
 
     public static String constructLink(String href, String curr, URLInfo info) {
+//        System.out.println(href);
         StringBuilder sb = new StringBuilder();
         
         if (href.contains("javascript:")) {
             return null;
         }
+        
+//        System.out.println("check 1");
         
         String[] removeHashtag = href.split("#");
         if (removeHashtag.length > 2) {
@@ -195,12 +200,15 @@ public class DownloaderBolt implements IRichBolt {
             return null;
         }
         
+//        System.out.println("check 2");
+        
         href = removeHashtag[0];
 
         if (!href.startsWith("http://") && !href.startsWith("https://")) {
             
             // TODO: build out to more unwanted links
-            if ((info.getHostName().contains("wikipedia") && href.contains("index.php")) || href.contains("..")) {
+            if ((info.getHostName().contains("wikipedia") && href.contains("index.php")) || href.contains("..")
+                    || href.contains("twitter.com")) {
                 return null;
             }
             
@@ -245,7 +253,8 @@ public class DownloaderBolt implements IRichBolt {
 
         } else {
             // absolute link
-            sb.append(curr);
+            sb.append(href);
+//            System.out.println("check 3");
         }
 
         String fullLink = sb.toString();
@@ -254,7 +263,7 @@ public class DownloaderBolt implements IRichBolt {
         if (fullLink.split("/").length > 53) {
             return null;
         }
-        
+//        System.out.println("check 4: " + fullLink);
         return fullLink;
     }
 

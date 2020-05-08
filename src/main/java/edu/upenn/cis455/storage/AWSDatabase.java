@@ -142,21 +142,21 @@ public class AWSDatabase {
 
     public static void main(String[] args) {
         
-//        String key = /*"input_directory/" +*/ RDS_Connection.digest("SHA-256", "https://www.reddit.com/r/AskReddit/comments/gepq6n/do_you_have_a_famous_ancestor_if_so_what_were/");
-//        System.out.println(key);
-//        S3Object o = s3Client.getObject(HTML_BUCKET, key);
-//        S3ObjectInputStream in = o.getObjectContent();
-//        
-//        InputStreamReader inR = new InputStreamReader(in, StandardCharsets.UTF_8);
-//        try {
-//            int i = inR.read();
-//            while (i != -1) {
-//                System.out.print((char) i);
-//                i = inR.read();
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+        String key = /*"input_directory/" +*/ RDS_Connection.digest("SHA-256", "https://www.nytimes.com/2020/04/19/opinion/trump-coronavirus-briefings.html");
+        System.out.println(key);
+        S3Object o = s3Client.getObject(HTML_BUCKET, key);
+        S3ObjectInputStream in = o.getObjectContent();
+        
+        InputStreamReader inR = new InputStreamReader(in, StandardCharsets.UTF_8);
+        try {
+            int i = inR.read();
+            while (i != -1) {
+                System.out.print((char) i);
+                i = inR.read();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }
