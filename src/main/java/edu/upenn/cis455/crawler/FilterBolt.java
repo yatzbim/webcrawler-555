@@ -2,6 +2,7 @@ package edu.upenn.cis455.crawler;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -83,6 +84,7 @@ public class FilterBolt implements IRichBolt {
             }
             
             URLInfo uInfo = new URLInfo(link);
+            String hostPort = uInfo.getHostName() + ":" + uInfo.getPortNo();
             try {
                 if (uInfo.getHostName().contains("google") || (uInfo.getHostName().contains("wikipedia")
                         && (uInfo.getFilePath().contains("&action=edit") || uInfo.getFilePath().contains("title=Special:")))) {
@@ -96,6 +98,14 @@ public class FilterBolt implements IRichBolt {
             
             if (XPathCrawler.rds.get_crawltime(link) > 0) {
 //                System.out.println("Already seen " + link + " - not crawling");
+                continue;
+            }
+            
+            boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
+            boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
+            if (isDisallowed && !isAllowed) {
+//                System.out.println("Not permitted to crawl " + link + ". Continuing");
+                XPathCrawler.rds.crawltime_write(link, new Date().getTime());
                 continue;
             }
             

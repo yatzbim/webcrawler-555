@@ -125,10 +125,7 @@ public class CrawlerBolt implements IRichBolt {
             return;
         }
 
-        String robotsTxtSite = hostPort + "/robots.txt";
-
         if (curr.startsWith("http://")) {
-            robotsTxtSite = "http://" + robotsTxtSite;
             // crawl http link
 
             try {
@@ -168,15 +165,15 @@ public class CrawlerBolt implements IRichBolt {
             }
 
             // check if it's allowed
-            boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
-            boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
-            if (isDisallowed && !isAllowed) {
-                System.out.println("Not permitted to crawl " + curr + ". Continuing");
-                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
-                httpConn.disconnect();
-                idle.decrementAndGet();
-                return;
-            }
+//            boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
+//            boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
+//            if (isDisallowed && !isAllowed) {
+//                System.out.println("Not permitted to crawl " + curr + ". Continuing");
+//                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
+//                httpConn.disconnect();
+//                idle.decrementAndGet();
+//                return;
+//            }
 
             // send HEAD request
             try {
@@ -311,7 +308,6 @@ public class CrawlerBolt implements IRichBolt {
             idle.decrementAndGet();
         } else if (curr.startsWith("https://")) {
             // case to crawl HTTPS links
-            robotsTxtSite = "https://" + robotsTxtSite;
 
             // establish connection to URL
             try {
@@ -338,15 +334,15 @@ public class CrawlerBolt implements IRichBolt {
             }
 
             // check if it's allowed
-            boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
-            boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
-            if (isDisallowed && !isAllowed) {
-                System.out.println("Not permitted to crawl " + curr + ". Continuing");
-                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
-                httpsConn.disconnect();
-                idle.decrementAndGet();
-                return;
-            }
+//            boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
+//            boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
+//            if (isDisallowed && !isAllowed) {
+//                System.out.println("Not permitted to crawl " + curr + ". Continuing");
+//                XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
+//                httpsConn.disconnect();
+//                idle.decrementAndGet();
+//                return;
+//            }
 
             int delay = XPathCrawler.rds.get_crawldelay(hostPort);
             if (delay == -1) {
