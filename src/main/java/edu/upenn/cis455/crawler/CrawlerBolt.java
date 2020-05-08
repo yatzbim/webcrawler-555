@@ -96,11 +96,6 @@ public class CrawlerBolt implements IRichBolt {
                 System.err.println("Error sending UDP monitoring packet for " + curr + ". Continuing");
             }
         }
-        
-        if (XPathCrawler.rds.get_crawltime(curr) > 0) {
-            idle.decrementAndGet();
-            return;
-        }
 
         // for HTTP
         HttpURLConnection httpConn = null;

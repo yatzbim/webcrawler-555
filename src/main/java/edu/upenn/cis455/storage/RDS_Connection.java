@@ -233,7 +233,7 @@ public class RDS_Connection {
              Statement st = conn.createStatement(); 
              String query = "SELECT DELAY FROM CRAWLDELAY WHERE HOSTNAME='" + hostname + "'";
              ResultSet rs = st.executeQuery(query);
-             int delay = 0;
+             int delay = -1;
              while (rs.next()) {
                     delay = rs.getInt("DELAY");
                 }
@@ -248,7 +248,7 @@ public class RDS_Connection {
 //            e.printStackTrace();
         }
         
-        return 0;
+        return -1;
         
     }
     
@@ -263,7 +263,7 @@ public class RDS_Connection {
              Statement st = conn.createStatement(); 
              String query = "SELECT CRAWLTIME FROM URLCRAWLTIME WHERE URLHASH='" + hashed_hostname +"'";
              ResultSet rs = st.executeQuery(query);
-             long time = -1;
+             long time = 0;
              while (rs.next()) {
                     time = rs.getLong("CRAWLTIME");
                 }
