@@ -98,7 +98,7 @@ public class RDS_Connection {
             	 String temp_path1 = temp_path.replace("$", "");
             			
                  st.executeUpdate("INSERT INTO DISALLOWS (DISALLOWED, HOSTNAME) " + 
-                         "VALUES ('"+ temp_path +"', '" + hostname +"')"); 
+                         "VALUES ('"+ temp_path1 +"', '" + hostname +"')"); 
              }
              conn.close(); 
 
