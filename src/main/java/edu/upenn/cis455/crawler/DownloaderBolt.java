@@ -205,7 +205,7 @@ public class DownloaderBolt implements IRichBolt {
         // TODO: build out to more unwanted links
 //        System.out.println("HREF: " + href);
         if (href.contains("twitter.com") || href.contains("facebook.com") || (href.contains("wikipedia") && href.contains("index.php"))
-                || href.contains("..") || (href.contains("eclipse.org") && href.contains("download")) || href.contains("advertising.amazon")) {
+                || href.contains("..") || (href.contains("eclipse.org") && href.contains("download")) || href.contains("advertising.amazon.")) {
 //            System.out.println("CUT BITCH: " + href);
             return null;
         }
