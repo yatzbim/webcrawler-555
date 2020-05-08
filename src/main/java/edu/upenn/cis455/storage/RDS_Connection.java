@@ -68,8 +68,9 @@ public class RDS_Connection {
          Statement st = conn.createStatement(); 
          for (String path: allowed_paths) {
         	 String temp_path = path.replace("*", "%");
+        	 String temp_path1 = temp_path.replace("$", "");
              st.executeUpdate("INSERT INTO ALLOWS (ALLOWED, HOSTNAME) " + 
-                     "VALUES ('"+ temp_path +"', '" + hostname +"')"); 
+                     "VALUES ('"+ temp_path1 +"', '" + hostname +"')"); 
          }
          conn.close(); 
 
@@ -94,6 +95,8 @@ public class RDS_Connection {
              Statement st = conn.createStatement(); 
              for (String path: disallowed_paths) {
             	 String temp_path = path.replace("*", "%");
+            	 String temp_path1 = temp_path.replace("$", "");
+            			
                  st.executeUpdate("INSERT INTO DISALLOWS (DISALLOWED, HOSTNAME) " + 
                          "VALUES ('"+ temp_path +"', '" + hostname +"')"); 
              }
