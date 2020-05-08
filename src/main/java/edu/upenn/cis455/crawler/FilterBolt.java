@@ -84,7 +84,7 @@ public class FilterBolt implements IRichBolt {
             }
             
             URLInfo uInfo = new URLInfo(link);
-            String hostPort = uInfo.getHostName() + ":" + uInfo.getPortNo();
+//            String hostPort = uInfo.getHostName() + ":" + uInfo.getPortNo();
             try {
                 if (uInfo.getHostName().contains("google") || (uInfo.getHostName().contains("wikipedia")
                         && (uInfo.getFilePath().contains("&action=edit") || uInfo.getFilePath().contains("title=Special:")))) {
@@ -101,6 +101,9 @@ public class FilterBolt implements IRichBolt {
                 continue;
             }
             
+            link = link.replace("./", "");
+            link = link.replace("/'", "");
+            
 //            boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
 //            boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
 //            if (isDisallowed && !isAllowed) {
@@ -112,6 +115,8 @@ public class FilterBolt implements IRichBolt {
             if (link.startsWith("http://www.imdb.com") || link.startsWith("http://www.hulu.com")) {
                 link = link.replaceFirst("http:", "https:");
             }
+            
+            
 			
 			instance.frontier.add(link);
 		}
