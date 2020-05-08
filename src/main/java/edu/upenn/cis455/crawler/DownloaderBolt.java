@@ -183,10 +183,6 @@ public class DownloaderBolt implements IRichBolt {
     public static String constructLink(String href, String curr, URLInfo info) {
         StringBuilder sb = new StringBuilder();
         
-        if (href.contains("javascript:")) {
-            return null;
-        }
-        
         String[] removeHashtag = href.split("#");
         if (removeHashtag.length > 2) {
             return null;
@@ -198,14 +194,21 @@ public class DownloaderBolt implements IRichBolt {
 
         // TODO: build out to more unwanted links
 //        System.out.println("HREF: " + href);
-        if (href.contains("twitter.com") || href.contains("facebook.com") || (href.contains("wikipedia") && href.contains("index.php"))
-                || href.contains("..") || (href.contains("eclipse.org") && href.contains("download")) || href.contains("advertising.amazon.")) {
-//            System.out.println("CUT BITCH: " + href);
+        if (href.contains("javascript:") || href.equals(".") || href.endsWith("/robots.txt")
+                || href.contains("twitter.com") || href.contains("facebook.com")
+                || (href.contains("wikipedia") && href.contains("index.php")) || href.contains("..")
+                || (href.contains("eclipse.org") && href.contains("download"))
+                || href.contains("advertising.amazon.")) {
+            // System.out.println("CUT BITCH: " + href);
             return null;
         }
-        
+
         if (!href.startsWith("http://") && !href.startsWith("https://")) {
             // relative link
+            if (href.charAt(0) == '.' && href.charAt(1) == '/') {
+                href = href.substring(2);
+            }
+
             if (href.charAt(0) == '/') {
                 // start from host
                 if (curr.startsWith("http://")) {
