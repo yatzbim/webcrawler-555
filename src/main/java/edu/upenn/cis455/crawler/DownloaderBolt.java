@@ -193,6 +193,9 @@ public class DownloaderBolt implements IRichBolt {
         
         href = removeHashtag[0];
 
+        href = href.replace("./", "");
+        href = href.replace("/'", "");
+        
         // TODO: build out to more unwanted links
 //        System.out.println("HREF: " + href);
         if (href.contains("javascript:") || href.equals(".") || href.endsWith("/robots.txt")
@@ -203,9 +206,6 @@ public class DownloaderBolt implements IRichBolt {
             // System.out.println("CUT BITCH: " + href);
             return null;
         }
-        
-        href = href.replace("./", "");
-        href = href.replace("/'", "");
         
         if (!href.startsWith("http://") && !href.startsWith("https://")) {
             // relative link
