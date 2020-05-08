@@ -19,6 +19,10 @@ import javax.net.ssl.HttpsURLConnection;
 
 import org.apache.log4j.Logger;
 import org.apache.tika.language.LanguageIdentifier;
+import org.apache.tika.language.detect.LanguageDetector;
+import org.apache.tika.language.detect.LanguageResult;
+import org.apache.tika.langdetect.OptimaizeLangDetector;
+import org.apache.tika.langdetect.TextLangDetector;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -55,6 +59,8 @@ public class DownloaderBolt implements IRichBolt {
     static AtomicInteger idle = new AtomicInteger(0);
 
     AWSDatabase aws = AWSDatabase.getInstance();
+    
+    static final LanguageDetector detector = new OptimaizeLangDetector().loadModels();
 
     public DownloaderBolt() {
         // log.debug("Starting downloader bolt");
@@ -89,22 +95,11 @@ public class DownloaderBolt implements IRichBolt {
 
         instance.inFlight.decrementAndGet();
 
-        // for HTTP
-        HttpURLConnection httpConn = null;
-
-        // for HTTPS
-        URL url = null;
-        HttpsURLConnection httpsConn = null;
-        HttpsURLConnection.setFollowRedirects(false);
-
         String curr = input.getStringByField("url");
-//        boolean downloadable = (boolean) input.getObjectByField("downloadable");
 
         URLInfo uInfo = new URLInfo(curr);
 
         List<String> newLinks = new LinkedList<>();
-
-//        boolean downloadable = XPathCrawler.rds.get_crawltime(curr) == 0;
         
         if (XPathCrawler.rds.get_crawltime(curr) == 0) {
             XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
@@ -120,13 +115,13 @@ public class DownloaderBolt implements IRichBolt {
             }
 
             String text = null;
-            LanguageIdentifier object = null;
+            LanguageResult langResult = null;
             if (doc != null) {
                 text = doc.text();
-                object = new LanguageIdentifier(text);
+                langResult = detector.detect(text);
             }
 
-            if (object != null && !object.getLanguage().equals("en") && object.isReasonablyCertain()) {
+            if (langResult != null && !langResult.getLanguage().equals("en") && langResult.isReasonablyCertain()) {
                 System.out.println(curr + " is not an english page.");
                 idle.decrementAndGet();
                 return;
@@ -156,7 +151,6 @@ public class DownloaderBolt implements IRichBolt {
                     newLinks.add(fullLink);
                 }
                 
-//                System.out.println("here");
                 aws.saveOutgoingLinks(curr, newLinks);
 
                 // download document
@@ -193,16 +187,12 @@ public class DownloaderBolt implements IRichBolt {
             return null;
         }
         
-//        System.out.println("check 1");
-        
         String[] removeHashtag = href.split("#");
         if (removeHashtag.length > 2) {
             return null;
         } else if (removeHashtag.length == 2 && removeHashtag[1].contains("/")) {
             return null;
         }
-        
-//        System.out.println("check 2");
         
         href = removeHashtag[0];
 
@@ -257,7 +247,6 @@ public class DownloaderBolt implements IRichBolt {
         } else {
             // absolute link
             sb.append(href);
-//            System.out.println("check 3");
         }
 
         String fullLink = sb.toString();
@@ -266,191 +255,35 @@ public class DownloaderBolt implements IRichBolt {
         if (fullLink.split("/").length > 53) {
             return null;
         }
-//        System.out.println("check 4: " + fullLink);
         return fullLink;
     }
 
-    // get the document for an HTTP link
-    public static String getDocumentHttps(HttpsURLConnection conn, String url) {
-        try {
-            conn.setRequestMethod("GET");
-        } catch (ProtocolException e1) {
-            System.err.println("Error setting GET request method for " + url);
-            return null;
-        }
-
-        URLInfo info = new URLInfo(url);
-
-        conn.setRequestProperty("Host", info.getHostName());
-        conn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
-        conn.setRequestProperty("Accept", "text/plain");
-
-        int code;
-        try {
-            code = conn.getResponseCode();
-        } catch (IOException e) {
-            System.err.println("Error getting GET response code for " + url);
-            return null;
-        }
-        if (code >= 400) {
-            System.err.print(url + ": " + code + " ");
-            switch (code) {
-            case 400:
-                System.err.print("Bad request");
-                break;
-            case 404:
-                System.err.print("Content not found");
-                break;
-            case 406:
-                System.err.print("File type received was not HTML, XML or RSS");
-                break;
-            case 409:
-                System.err.print("CETS error. Check the format of your request");
-            default:
-                System.err.print("Other error. Developer needs to get off his ass and do some debugging");
-            }
-            System.err.println(" - Continuing");
-            return null;
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        InputStream input;
-        try {
-            input = conn.getInputStream();
-        } catch (IOException e) {
-            System.err.println("Error getting GET input stream for " + url);
-            return null;
-        }
-        InputStreamReader in = new InputStreamReader(input);
-        int i = 0;
-        try {
-            while (i != -1) {
-                i = in.read();
-                if (i != -1) {
-                    sb.append((char) i);
-                }
-
-                if (!in.ready()) {
-                    break;
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("Error getting GET response for " + url);
-            return null;
-        }
-
-        String body = sb.toString();
-
-        if (body.isEmpty()) {
-            try {
-                input.close();
-            } catch (IOException e) {
-                System.err.println("Error closing GET input stream for " + url);
-            }
-            return null;
-        }
-
-        return body;
-    }
-
-    // get the document for an HTTP link
-    public static String getDocument(HttpURLConnection conn, String url) {
-        try {
-            conn.setRequestMethod("GET");
-        } catch (ProtocolException e1) {
-            System.err.println("Error setting GET request method for " + url);
-            return null;
-        }
-
-        URLInfo info = new URLInfo(url);
-
-        conn.setRequestProperty("Host", info.getHostName());
-        conn.setRequestProperty("User-Agent", XPathCrawler.USER_AGENT);
-        conn.setRequestProperty("Accept", "text/plain");
-
-        int code;
-        try {
-            code = conn.getResponseCode();
-        } catch (IOException e) {
-            System.err.println("Error getting GET response code for " + url);
-            return null;
-        }
-        if (code >= 400) {
-            System.err.print(url + ": ");
-            switch (code) {
-            case 400:
-                System.err.print("Bad request");
-                break;
-            case 404:
-                System.err.print("Content not found");
-                break;
-            case 406:
-                System.err.print("File type received was not HTML, XML or RSS");
-                break;
-            case 409:
-                System.err.print("CETS error. Check the format of your request");
-            default:
-                System.err.print("Other error. Developer needs to get off his ass and do some debugging");
-            }
-            System.err.println(" - Continuing");
-            return null;
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        InputStream input;
-        try {
-            input = conn.getInputStream();
-        } catch (IOException e) {
-            System.err.println("Error getting GET input stream for " + url);
-            return null;
-        }
-        InputStreamReader in = new InputStreamReader(input);
-        int i = 0;
-        try {
-            while (i != -1) {
-                i = in.read();
-                if (i != -1) {
-                    sb.append((char) i);
-                }
-
-                if (!in.ready()) {
-                    break;
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("Error getting GET response for " + url);
-            return null;
-        }
-
-        String body = sb.toString();
-
-        if (body.isEmpty()) {
-            try {
-                input.close();
-            } catch (IOException e) {
-                System.err.println("Error closing GET input stream for " + url);
-            }
-            return null;
-        }
-
-        return body;
-    }
-    
     public static void main(String[] args) throws IOException {
-        String link = "https://www.amazon.com";
+        String link = "http://centraldeajuda.globo.com/Dicas-de-seguranca/Glossario/";
         Document doc = Jsoup.connect(link)
                 .userAgent("cis455crawler")
                 .get();
 //        System.out.println(doc.toString());
         
-        Elements linkElts = doc.select("a[href]");
 //        for (Element elt : linkElts) {
 ////            String rawLink = elt.attributes().get("href").trim();
 ////            String lang = elt.attributes().get("hreflang").trim();
 //            System.out.println(elt);
 //        }
 
+        
+        
+        String text = null;
+//        LanguageIdentifier object = null;
+        if (doc != null) {
+            text = doc.text();
+//            object = new LanguageIdentifier(text);
+        }
+
+        LanguageDetector detector = new OptimaizeLangDetector().loadModels();
+        LanguageResult result = detector.detect(text);
+        System.out.println(result.getLanguage());
+        System.out.println(result.getConfidence());
+        System.out.println(result.isReasonablyCertain());
     }
 }
