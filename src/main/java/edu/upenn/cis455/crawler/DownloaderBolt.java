@@ -149,7 +149,7 @@ public class DownloaderBolt implements IRichBolt {
                         continue;
                     }
 
-                    if (fullLink.startsWith("http://www.imdb.com")) {
+                    if (fullLink.startsWith("http://www.imdb.com") || fullLink.startsWith("http://www.hulu.com")) {
                         fullLink = fullLink.replaceFirst("http:", "https:");
                     }
                     
