@@ -205,7 +205,7 @@ public class DownloaderBolt implements IRichBolt {
         // TODO: build out to more unwanted links
 //        System.out.println("HREF: " + href);
         if (href.contains("twitter.com") || href.contains("facebook.com") || (href.contains("wikipedia") && href.contains("index.php"))
-                || href.contains("..") || (href.contains("eclipse.org") && href.contains("download"))) {
+                || href.contains("..") || (href.contains("eclipse.org") && href.contains("download")) || href.contains("advertising.amazon")) {
 //            System.out.println("CUT BITCH: " + href);
             return null;
         }
@@ -234,7 +234,7 @@ public class DownloaderBolt implements IRichBolt {
                 
                 String[] linkPieces = noQuery.split("/");
                 String bookend = linkPieces[linkPieces.length-1];
-                if (!bookend.equals(info.getHostName()) && bookend.contains(".")) {
+                if (!bookend.equals(info.getHostName()) && bookend.contains(".") && !bookend.contains("java.")) {
                     // last thing in path is a file, get rid of it before appending href
                     for (int i = 0; i < linkPieces.length - 1; i++) {
                         sb.append(linkPieces[i]);
