@@ -66,7 +66,13 @@ public class RobotsTxtInfo {
                  addDisallowedLink(currAgent, val);
                 break;
             case "crawl-delay":
-                 addCrawlDelay(currAgent, Integer.parseInt(val));
+                try {
+                    addCrawlDelay(currAgent, Integer.parseInt(val));
+                } catch (NumberFormatException e) {
+                    System.out.println(robotsTxt + "\n " + keyVal);
+                    e.printStackTrace();
+                    System.exit(0);
+                }
                 break;
             case "sitemap":
                 addSitemapLink(val);

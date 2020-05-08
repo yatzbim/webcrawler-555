@@ -142,7 +142,7 @@ public class AWSDatabase {
 
     public static void main(String[] args) {
         
-        String key = /*"input_directory/" +*/ RDS_Connection.digest("SHA-256", "https://www.nytimes.com/2020/04/19/opinion/trump-coronavirus-briefings.html");
+        String key = /*"input_directory/" +*/ RDS_Connection.digest("SHA-256", "https://docs.oracle.com/en/java/javase/14/docs/api/index.html");
         System.out.println(key);
         S3Object o = s3Client.getObject(HTML_BUCKET, key);
         S3ObjectInputStream in = o.getObjectContent();
