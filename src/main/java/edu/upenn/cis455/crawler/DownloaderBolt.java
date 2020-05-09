@@ -155,9 +155,9 @@ public class DownloaderBolt implements IRichBolt {
                 aws.saveOutgoingLinks(curr, newLinks);
 
                 // download document
-                instance.downloads.incrementAndGet();
                 System.out.println("Downloading " + curr);
                 aws.savePage(curr, text);
+                instance.downloads.incrementAndGet();
             }
         }
 
@@ -201,10 +201,10 @@ public class DownloaderBolt implements IRichBolt {
 //        System.out.println("HREF: " + href);
         if (href.contains("javascript:") || href.equals(".") || href.endsWith("/robots.txt")
                 || href.contains("twitter.com") || href.contains("facebook.com")
-                || (href.contains("wikipedia") && href.contains("index.php")) || href.contains("..")
+                || ((href.contains("wikipedia") || curr.contains("wikipedia")) && href.contains("index.php")) || href.contains("..")
                 || (href.contains("eclipse.org") && href.contains("download"))
                 || href.contains("advertising.amazon.") || href.contains("philaathenaeum.org")) {
-            // System.out.println("CUT BITCH: " + href);
+             System.out.println("CUT BITCH: " + href);
             return null;
         }
         

@@ -144,11 +144,11 @@ public class AWSDatabase {
 
     public static void main(String[] args) {
         
-        String url = "http://homes.sice.indiana.edu/txu/files/xu_yu_smith_2011_toddler visual experience.pdf";
+        String url = "https://en.wikipedia.org/wiki/Émile_Loubet";
         
         url = url.replace(" ", "%20");
         
-        String key = /*"input_directory/" +*/ RDS_Connection.digest("SHA-256", url);
+        String key = "input_directory/" + RDS_Connection.digest("SHA-256", url);
         
 //        String encodedString = null;
 //        try {
@@ -164,19 +164,19 @@ public class AWSDatabase {
         System.out.println(url);
         
         System.out.println(key);
-//        S3Object o = s3Client.getObject(HTML_BUCKET, key);
-//        S3ObjectInputStream in = o.getObjectContent();
-//        
-//        InputStreamReader inR = new InputStreamReader(in, StandardCharsets.UTF_8);
-//        try {
-//            int i = inR.read();
-//            while (i != -1) {
-//                System.out.print((char) i);
-//                i = inR.read();
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+        S3Object o = s3Client.getObject(OUTURL_BUCKET_1, key);
+        S3ObjectInputStream in = o.getObjectContent();
+        
+        InputStreamReader inR = new InputStreamReader(in, StandardCharsets.UTF_8);
+        try {
+            int i = inR.read();
+            while (i != -1) {
+                System.out.print((char) i);
+                i = inR.read();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }
