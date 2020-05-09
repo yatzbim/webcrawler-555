@@ -204,7 +204,7 @@ public class DownloaderBolt implements IRichBolt {
                 || ((href.contains("wikipedia") || curr.contains("wikipedia")) && href.contains("index.php")) || href.contains("..")
                 || (href.contains("eclipse.org") && href.contains("download"))
                 || href.contains("advertising.amazon.") || href.contains("philaathenaeum.org")) {
-             System.out.println("CUT BITCH: " + href);
+//             System.out.println("CUT BITCH: " + href);
             return null;
         }
         
