@@ -35,7 +35,7 @@ public class AWSDatabase {
 //    public static final String HTML_BUCKET = "indexcontent";
 //    public static final String OUTURL_BUCKET_1 = "worker-bucket-1";
 //    public static final String OUTURL_BUCKET_2 = "worker-bucket-2";
-    public static final String HTML_BUCKET = "urlcontent";
+    public static final String HTML_BUCKET = "tumbling-tumbleweeds";
     public static final String OUTURL_BUCKET_1 = "outgoinglinks-1";
     public static final String OUTURL_BUCKET_2 = "outgoinglinks-2";
 
