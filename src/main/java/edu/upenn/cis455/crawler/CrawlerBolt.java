@@ -205,6 +205,7 @@ public class CrawlerBolt implements IRichBolt {
                 String location = httpConn.getHeaderField("Location");
                 location = location.replace("./", "");
                 location = location.replace("/'", "");
+                location = location.replace(" ", "%20");
                 
                 if (XPathCrawler.rds.get_crawltime(curr) > 0) {
                     httpConn.disconnect();
@@ -382,6 +383,7 @@ public class CrawlerBolt implements IRichBolt {
                 String location = httpsConn.getHeaderField("Location");
                 location = location.replace("./", "");
                 location = location.replace("/'", "");
+                location = location.replace(" ", "%20");
                 
                 if (XPathCrawler.rds.get_crawltime(curr) > 0) {
                     httpsConn.disconnect();

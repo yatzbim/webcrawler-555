@@ -4,6 +4,8 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -142,21 +144,39 @@ public class AWSDatabase {
 
     public static void main(String[] args) {
         
-        String key = /*"input_directory/" +*/ RDS_Connection.digest("SHA-256", "https://docs.oracle.com/en/java/javase/14/docs/api/index.html");
-        System.out.println(key);
-        S3Object o = s3Client.getObject(HTML_BUCKET, key);
-        S3ObjectInputStream in = o.getObjectContent();
+        String url = "http://homes.sice.indiana.edu/txu/files/xu_yu_smith_2011_toddler visual experience.pdf";
         
-        InputStreamReader inR = new InputStreamReader(in, StandardCharsets.UTF_8);
-        try {
-            int i = inR.read();
-            while (i != -1) {
-                System.out.print((char) i);
-                i = inR.read();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        url = url.replace(" ", "%20");
+        
+        String key = /*"input_directory/" +*/ RDS_Connection.digest("SHA-256", url);
+        
+//        String encodedString = null;
+//        try {
+//            encodedString = URLEncoder.encode(url, StandardCharsets.UTF_8.toString());
+//        } catch (UnsupportedEncodingException e1) {
+//            // TODO Auto-generated catch block
+//            e1.printStackTrace();
+//        }
+//        
+//        encodedString = encodedString.replace("%2F", "/");
+//        encodedString = encodedString.replace("%3A", ":");
+        
+        System.out.println(url);
+        
+        System.out.println(key);
+//        S3Object o = s3Client.getObject(HTML_BUCKET, key);
+//        S3ObjectInputStream in = o.getObjectContent();
+//        
+//        InputStreamReader inR = new InputStreamReader(in, StandardCharsets.UTF_8);
+//        try {
+//            int i = inR.read();
+//            while (i != -1) {
+//                System.out.print((char) i);
+//                i = inR.read();
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
     }
 
 }
