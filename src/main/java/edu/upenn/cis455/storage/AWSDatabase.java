@@ -93,22 +93,22 @@ public class AWSDatabase {
     }
 
     // method to add a new page to the buckets
-    public synchronized void savePage(String url, String html) {
+    public void savePage(String url, String html) {
         if (url == null || html == null) {
             return;
         }
         
-        InputStream input = new ByteArrayInputStream(html.getBytes());;
+//        InputStream input = new ByteArrayInputStream(html.getBytes());
 
         String key = RDS_Connection.encodeHex(digest.digest(url.getBytes()));
 
-        s3Client.putObject(HTML_BUCKET, key, input, meta);
+//        s3Client.putObject(HTML_BUCKET, key, input, meta);
+        s3Client.putObject(HTML_BUCKET, key, html);
         s3Client.setObjectAcl(HTML_BUCKET, key, CannedAccessControlList.BucketOwnerFullControl);
-//        s3Client.putObject(HTML_BUCKET, key, html);
     }
 
     // method to add a list of outgoing links
-    public synchronized void saveOutgoingLinks(String url, List<String> urlList) {
+    public void saveOutgoingLinks(String url, List<String> urlList) {
         if (url == null || urlList == null) {
             return;
         }
