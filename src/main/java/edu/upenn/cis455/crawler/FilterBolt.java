@@ -76,6 +76,9 @@ public class FilterBolt implements IRichBolt {
 				continue;
 			}
 
+			link = link.replace("./", "");
+            link = link.replace("/'", "");
+			
 			// make sure it's a valid URL
             try {
                 new URL(link);
@@ -95,14 +98,10 @@ public class FilterBolt implements IRichBolt {
                 continue;
             }
             
-            
             if (XPathCrawler.rds.get_crawltime(link) > 0) {
 //                System.out.println("Already seen " + link + " - not crawling");
                 continue;
             }
-            
-            link = link.replace("./", "");
-            link = link.replace("/'", "");
             
 //            boolean isAllowed = XPathCrawler.rds.check_allow(hostPort, uInfo.getFilePath());
 //            boolean isDisallowed = XPathCrawler.rds.check_disallow(hostPort, uInfo.getFilePath());
@@ -115,8 +114,6 @@ public class FilterBolt implements IRichBolt {
             if (link.startsWith("http://www.imdb.com") || link.startsWith("http://www.hulu.com")) {
                 link = link.replaceFirst("http:", "https:");
             }
-            
-            
 			
 			instance.frontier.add(link);
 		}

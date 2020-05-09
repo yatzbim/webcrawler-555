@@ -60,7 +60,7 @@ public class DownloaderBolt implements IRichBolt {
 
     AWSDatabase aws = AWSDatabase.getInstance();
     
-    static final LanguageDetector detector = new OptimaizeLangDetector().loadModels();
+    final LanguageDetector detector = new OptimaizeLangDetector().loadModels();
 
     public DownloaderBolt() {
         // log.debug("Starting downloader bolt");
@@ -184,6 +184,10 @@ public class DownloaderBolt implements IRichBolt {
     public static String constructLink(String href, String curr, URLInfo info) {
         StringBuilder sb = new StringBuilder();
         
+        href = href.replace("./", "");
+        href = href.replace("/'", "");
+        href = href.replace(" ", "%20"); // TODO: expand to all UTF-8 encoding
+        
         String[] removeHashtag = href.split("#");
         if (removeHashtag.length > 2) {
             return null;
@@ -192,9 +196,6 @@ public class DownloaderBolt implements IRichBolt {
         }
         
         href = removeHashtag[0];
-
-        href = href.replace("./", "");
-        href = href.replace("/'", "");
         
         // TODO: build out to more unwanted links
 //        System.out.println("HREF: " + href);
