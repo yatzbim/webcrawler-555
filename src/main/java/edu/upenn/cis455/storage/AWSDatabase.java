@@ -98,12 +98,12 @@ public class AWSDatabase {
             return;
         }
         
-//        InputStream input = new ByteArrayInputStream(html.getBytes());
+        InputStream input = new ByteArrayInputStream(html.getBytes());
 
         String key = RDS_Connection.encodeHex(digest.digest(url.getBytes()));
 
-//        s3Client.putObject(HTML_BUCKET, key, input, meta);
-        s3Client.putObject(HTML_BUCKET, key, html);
+        s3Client.putObject(HTML_BUCKET, key, input, meta);
+//        s3Client.putObject(HTML_BUCKET, key, html);
         s3Client.setObjectAcl(HTML_BUCKET, key, CannedAccessControlList.BucketOwnerFullControl);
     }
 
