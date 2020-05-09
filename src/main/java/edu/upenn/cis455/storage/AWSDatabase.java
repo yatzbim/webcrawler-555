@@ -34,12 +34,12 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 
 public class AWSDatabase {
 
-//    public static final String HTML_BUCKET = "indexcontent";
-//    public static final String OUTURL_BUCKET_1 = "worker-bucket-1";
-//    public static final String OUTURL_BUCKET_2 = "worker-bucket-2";
-    public static final String HTML_BUCKET = "tumbling-tumbleweeds";
-    public static final String OUTURL_BUCKET_1 = "outgoinglinks-1";
-    public static final String OUTURL_BUCKET_2 = "outgoinglinks-2";
+    public static final String HTML_BUCKET = "bigindexcontent";
+    public static final String OUTURL_BUCKET_1 = "worker-bucket-1";
+    public static final String OUTURL_BUCKET_2 = "worker-bucket-2";
+//    public static final String HTML_BUCKET = "tumbling-tumbleweeds";
+//    public static final String OUTURL_BUCKET_1 = "outgoinglinks-1";
+//    public static final String OUTURL_BUCKET_2 = "outgoinglinks-2";
 
     private static AtomicInteger whichLinkBucket = new AtomicInteger(1);
     
@@ -144,11 +144,12 @@ public class AWSDatabase {
 
     public static void main(String[] args) {
         
-        String url = "https://en.wikipedia.org/wiki/Émile_Loubet";
+        String url = "https://en.wikipedia.org/wiki/File:Emile_Loubet.jpg";
         
         url = url.replace(" ", "%20");
         
-        String key = "input_directory/" + RDS_Connection.digest("SHA-256", url);
+        String key_1 = "input_directory/" + RDS_Connection.digest("SHA-256", url);
+        String key = RDS_Connection.digest("SHA-256", url);
         
 //        String encodedString = null;
 //        try {
@@ -164,7 +165,7 @@ public class AWSDatabase {
         System.out.println(url);
         
         System.out.println(key);
-        S3Object o = s3Client.getObject(OUTURL_BUCKET_1, key);
+        S3Object o = s3Client.getObject(HTML_BUCKET, key);
         S3ObjectInputStream in = o.getObjectContent();
         
         InputStreamReader inR = new InputStreamReader(in, StandardCharsets.UTF_8);
