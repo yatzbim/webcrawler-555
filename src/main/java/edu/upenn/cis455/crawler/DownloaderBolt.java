@@ -138,10 +138,6 @@ public class DownloaderBolt implements IRichBolt {
                             || rawLink.startsWith("mailto:")) {
                         continue;
                     }
-                    
-//                    rawLink = rawLink.replace("./", "");
-                    rawLink = rawLink.replace("/'", "");
-//                    rawLink = rawLink.replace(" ", "%20");
 
                     String fullLink = constructLink(rawLink, curr, uInfo);
                     if (fullLink == null || fullLink.trim().equals(curr)) {
@@ -190,6 +186,10 @@ public class DownloaderBolt implements IRichBolt {
         
         if (href.contains("..")) {
             return null;
+        }
+        
+        if (href.contains("'")) {
+            System.out.println("FOUND THAT BITCH: " + href);
         }
         
         href = href.replace("./", "");
@@ -273,10 +273,16 @@ public class DownloaderBolt implements IRichBolt {
     }
 
     public static void main(String[] args) throws IOException {
-        String link = "http://ataripodcast.libsyn.com/2013/06/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'";
-        Document doc = Jsoup.connect(link)
-                .userAgent("cis455crawler")
-                .get();
+        String href = "http://ataripodcast.libsyn.com/2013/06/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'";
+        
+        href = href.replace("./", "");
+        href = href.replace("/'", "");
+        href = href.replace(" ", "%20");
+        System.out.println(href);
+        
+//        Document doc = Jsoup.connect(link)
+//                .userAgent("cis455crawler")
+//                .get();
 //        System.out.println(doc.toString());
         
 //        for (Element elt : linkElts) {
@@ -287,13 +293,13 @@ public class DownloaderBolt implements IRichBolt {
 
         
         
-        String text = null;
-////        LanguageIdentifier object = null;
-        if (doc != null) {
-            text = doc.text();
-//            object = new LanguageIdentifier(text);
-        }
-//
+//        String text = null;
+//////        LanguageIdentifier object = null;
+//        if (doc != null) {
+//            text = doc.text();
+////            object = new LanguageIdentifier(text);
+//        }
+////
 //        LanguageDetector detector = new OptimaizeLangDetector().loadModels();
 //        LanguageResult langResult = detector.detect(text);
 //        System.out.println(langResult.getLanguage());
