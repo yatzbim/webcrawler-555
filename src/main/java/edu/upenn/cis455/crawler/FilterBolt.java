@@ -99,6 +99,10 @@ public class FilterBolt implements IRichBolt {
 //                continue;
 //            }
             
+            if (link.startsWith("http://redditlist.com/nsfw")) {
+                continue;
+            }
+            
             if (XPathCrawler.rds.get_crawltime(link) > 0) {
 //                System.out.println("Already seen " + link + " - not crawling");
                 continue;
