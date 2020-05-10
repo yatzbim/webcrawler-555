@@ -1,0 +1,81 @@
+ssh -i linkey.pem hadoop@ec2-34-228-184-171.compute-1.amazonaws.com
+sudo vi /usr/share/aws/emr/emrfs/conf/emrfs-site.xml
+
+i
+
+
+<property>
+  <name>fs.s3.maxConnections</name>
+  <value>400</value>
+</property>
+
+:wq
+
+From terminal------------------
+sudo scp -i linkey.pem linkey.pem hadoop@ec2-34-228-184-171.compute-1.amazonaws.com:~/
+
+
+
+master========================
+Ls
+
+
+hdfs dfsadmin -report | grep ^Name | cut -f2 -d:| cut -f2 -d' '
+
+ssh -i linkey.pem hadoop@ip1slave
+
+
+sudo vi /usr/share/aws/emr/emrfs/conf/emrfs-site.xml
+
+i
+
+
+<property>
+  <name>fs.s3.maxConnections</name>
+  <value>400</value>
+</property>
+
+:wq
+
+Ctrl+d
+
+
+ssh -i linkey.pem hadoop@ip1slave
+
+
+sudo vi /usr/share/aws/emr/emrfs/conf/emrfs-site.xml
+
+i
+
+
+<property>
+  <name>fs.s3.maxConnections</name>
+  <value>400</value>
+</property>
+
+:wq
+
+Ctrl+d
+
+
+
+
+
+
+
+
+
+on master ----------------  
+
+
+
+on master ------------------------   ssh -i linkey hadoop@`hadoop dfsadmin -report |grep Name: |cut -d':' -f2 |sed 's/ //g'`
+
+
+
+
+
+
+
+ssh -i linkey.pem hadoop@$`hadoop dfsadmin -report |grep Name: |cut -d':' -f2 |sed 's/ //g'`
+hdfs dfsadmin -report | grep ^Name | cut -f2 -d:| cut -f2 -d' '
