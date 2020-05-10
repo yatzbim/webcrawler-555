@@ -138,6 +138,10 @@ public class DownloaderBolt implements IRichBolt {
                             || rawLink.startsWith("mailto:")) {
                         continue;
                     }
+                    
+//                    rawLink = rawLink.replace("./", "");
+                    rawLink = rawLink.replace("/'", "");
+//                    rawLink = rawLink.replace(" ", "%20");
 
                     String fullLink = constructLink(rawLink, curr, uInfo);
                     if (fullLink == null || fullLink.trim().equals(curr)) {
@@ -300,7 +304,7 @@ public class DownloaderBolt implements IRichBolt {
 //            System.out.println("yiff success");
 //        }
 //        link = link.replace("./", "");
-        link = link.replace("/'", "");
-        System.out.println(link);
+//        link = link.replace("/'", "");
+//        System.out.println(link);
     }
 }

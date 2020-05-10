@@ -35,11 +35,13 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 
+import edu.upenn.cis455.crawler.XPathCrawler;
+
 public class AWSDatabase {
 
-//    private static final String HTML_BUCKET = "bigindexcontent";
-    private static final String OUTURL_BUCKET = "worker-bucket-1";
-    private static final String HTML_BUCKET = "tumbling-tumbleweeds";
+    private static final String HTML_BUCKET = "indexcontent1000";
+    private static final String OUTURL_BUCKET = "pagerank1000";
+//    private static final String HTML_BUCKET = "tumbling-tumbleweeds";
 //    private static final String OUTURL_BUCKET = "outgoinglinks-1";
     
     public static final String OUTURL_BUCKET_KEY = "pageRankStart.txt";
@@ -105,7 +107,8 @@ public class AWSDatabase {
         InputStream input = new ByteArrayInputStream(html.getBytes());
 
         String key = RDS_Connection.encodeHex(digest.digest(url.getBytes()));
-
+        XPathCrawler.rds.urls_gotten(key);
+        
         s3Client.putObject(HTML_BUCKET, key, input, meta);
 //        s3Client.putObject(HTML_BUCKET, key, html);
         s3Client.setObjectAcl(HTML_BUCKET, key, CannedAccessControlList.BucketOwnerFullControl);
