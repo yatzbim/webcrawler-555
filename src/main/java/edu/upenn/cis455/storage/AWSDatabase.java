@@ -38,7 +38,7 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 public class AWSDatabase {
 
 //    public static final String HTML_BUCKET = "bigindexcontent";
-    public static final String OUTURL_BUCKET = "pagerank-500";
+    public static final String OUTURL_BUCKET = "pagerank500";
     public static final String HTML_BUCKET = "tumbling-tumbleweeds";
 //    public static final String OUTURL_BUCKET = "outgoinglinks-1";
     
