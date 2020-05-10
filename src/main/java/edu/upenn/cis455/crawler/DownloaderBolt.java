@@ -188,10 +188,6 @@ public class DownloaderBolt implements IRichBolt {
             return null;
         }
         
-        if (href.contains("'")) {
-            System.out.println("FOUND THAT BITCH: " + href);
-        }
-        
         href = href.replace("./", "");
         href = href.replace("/'", "");
         href = href.replace(" ", "%20");
@@ -207,12 +203,11 @@ public class DownloaderBolt implements IRichBolt {
         
         // TODO: build out to more unwanted links
 //        System.out.println("HREF: " + href);
-        if (href.contains("javascript:") || href.equals(".") || href.endsWith("/robots.txt")
+        if (href.contains("javascript:") || href.equals(".") || href.equals("'") || href.endsWith("/robots.txt")
                 || href.contains("twitter.com") || href.contains("facebook.com")
                 || ((href.contains("wikipedia") || curr.contains("wikipedia")) && href.contains("index.php"))
-                || (href.contains("eclipse.org") && href.contains("download"))
-                || href.contains("advertising.amazon.") || href.contains("philaathenaeum.org")
-                || href.contains("coupons.businessinsider.")) {
+                || (href.contains("eclipse.org") && href.contains("download")) || href.contains("advertising.amazon.")
+                || href.contains("philaathenaeum.org") || href.contains("coupons.businessinsider.")) {
             // System.out.println("CUT BITCH: " + href);
             return null;
         }
