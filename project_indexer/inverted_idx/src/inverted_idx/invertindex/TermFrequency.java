@@ -113,55 +113,65 @@ public class TermFrequency extends Configured implements Tool {
 			Configuration conf = new Configuration();
 			Text tokenFileName  = new Text();
 	        String token_fileNameString = "";
-	        String strURI = "s3://bigindexcontent/" + value.toString();
+	        String strURI = "s3://testindexlist1k/" + value.toString();
 //	        String strURI = "/home/cis455/project_indexer/inverted_idx/build/libs/in_s/" + value.toString();
-	        
 	        URI uri = URI.create(strURI);
-	        FileSystem fs = FileSystem.get(uri, context.getConfiguration());
-	        
-//	        FileSystem fs = FileSystem.get(getConf());
-//	        Path hdfsreadpath = new Path(strURI);
-		      //Init input stream
-		      //Classical input stream usage
-//		      String out= IOUtils.toString(inputStream, "UTF-8");
-
-	        
-	        StringBuilder stringBuilder = new StringBuilder();
-	        
-	        String fileName = value.toString();
-	        
-	        FSDataInputStream s = fs.open(new Path(strURI));
-	        BufferedReader br=new BufferedReader(new InputStreamReader((InputStream)s));
-	        
+	        FileSystem fs = null;
+	        BufferedReader br = null;
+	        FSDataInputStream s =null;
 	        String fileContent="";
-	        stringBuilder.setLength(0);
-	        for (String line = br.readLine(); line!=null; line=br.readLine())
-	        	{
-	        	stringBuilder.append(line + "\n");
-	        	}
-	        	
-	        fileContent = stringBuilder.toString();
+	        String fileName="";
 	        
-	        System.out.println("fileContent " + fileContent);
-	        String fileterd = fileContent.toString().replaceAll("[^ \\nA-Za-z]+"," ");
+	        
+	        try {
+	        		fs = FileSystem.get(uri, context.getConfiguration());
+			        StringBuilder stringBuilder = new StringBuilder();
+			        fileName = value.toString();
+			        s = fs.open(new Path(strURI));
+			        br=new BufferedReader(new InputStreamReader((InputStream)s));
+			        stringBuilder.setLength(0);
+			        for (String line = br.readLine(); line!=null; line=br.readLine())
+			        	{
+			        	stringBuilder.append(line + "\n");
+			        	}
+			        	
+			        fileContent = stringBuilder.toString();
+			        System.out.println("fileContent " + fileContent);
+			        
+	        }
+	        
+	        catch(FileNotFoundException o){
+	        	o.printStackTrace();
+	        }
+	        
+	        finally {
+	        	if (fs!=null) fs.close();
+	        	if (s!=null) s.close();
+	        	if (br!=null) br.close();
+	        }
+	        
+			        String fileterd = fileContent.toString().replaceAll("[^ \\nA-Za-z]+"," ");
+		
+			        
+			        StringTokenizer itr = new StringTokenizer(fileterd);
+		//			FileSplit InputfileSplit = (FileSplit) context.getInputSplit();
+		//			String fileName = InputfileSplit.getPath().getName();
+					
+					while (itr.hasMoreTokens()) {
+						String word = itr.nextToken();
+		//				 if (word.isEmpty()) {
+		//		               continue;
+		//		            }				 
+		//				if (!stopwords.contains(word)) {					
+							token_fileNameString = word.toLowerCase()+"#####" + fileName;
+				           	tokenFileName = new Text(token_fileNameString);
+							context.write(tokenFileName, one);
+		//					}
+					}
 
 	        
-	        StringTokenizer itr = new StringTokenizer(fileterd);
-//			FileSplit InputfileSplit = (FileSplit) context.getInputSplit();
-//			String fileName = InputfileSplit.getPath().getName();
-			
-			while (itr.hasMoreTokens()) {
-				String word = itr.nextToken();
-//				 if (word.isEmpty()) {
-//		               continue;
-//		            }				 
-//				if (!stopwords.contains(word)) {					
-					token_fileNameString = word.toLowerCase()+"#####" + fileName;
-		           	tokenFileName = new Text(token_fileNameString);
-					context.write(tokenFileName, one);
-//					}
-			}
 		}
+		
 	}
 	
 //	emrfs to download file context -> connect the file system -> open the datastream to path-> read bufferedreader -> download -> 
