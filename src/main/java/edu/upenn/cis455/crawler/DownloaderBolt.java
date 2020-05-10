@@ -111,7 +111,7 @@ public class DownloaderBolt implements IRichBolt {
 //                doc.getElementsByClass("footer").remove();
                 doc.charset(Charset.forName("UTF-8"));
             } catch (IOException e) {
-                e.printStackTrace();
+//                e.printStackTrace();
                 System.err.println("Error connecting to " + curr + " with JSoup. Continuing");
             }
 
