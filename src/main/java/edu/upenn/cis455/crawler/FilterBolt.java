@@ -5,6 +5,7 @@ import java.net.URL;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -63,7 +64,7 @@ public class FilterBolt implements IRichBolt {
 		instance.inFlight.decrementAndGet();
 
 		@SuppressWarnings("unchecked")
-		List<String> links = (List<String>) input.getObjectByField("links");
+		Set<String> links = (Set<String>) input.getObjectByField("links");
 
 		if (links == null) {
 			idle.decrementAndGet();
