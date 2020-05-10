@@ -160,6 +160,7 @@ public class CrawlerBolt implements IRichBolt {
 
             // since we've waited long enough, update the last access
             if (delay > -1) {
+                System.out.println("DELAY > -1");
                 synchronized (XPathCrawler.accessLock) {
 //                  System.out.println("New Access: " + hostPort);
                   instance.lastAccessed.put(hostPort, new Date().getTime() + (delay * 1000));
