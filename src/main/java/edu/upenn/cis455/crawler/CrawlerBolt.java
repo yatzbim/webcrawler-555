@@ -136,7 +136,7 @@ public class CrawlerBolt implements IRichBolt {
                 return;
             }
 
-            httpConn.setReadTimeout(2000);
+            httpConn.setReadTimeout(5000);
             
             // only enter this conditional if a robots.txt exists
             
@@ -333,7 +333,7 @@ public class CrawlerBolt implements IRichBolt {
                 return;
             }
             
-            httpsConn.setReadTimeout(2000);
+            httpsConn.setReadTimeout(5000);
 
             boolean delayAllows = true;
 //            synchronized (XPathCrawler.accessLock) {
