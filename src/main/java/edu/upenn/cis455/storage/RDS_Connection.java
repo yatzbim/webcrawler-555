@@ -172,7 +172,7 @@ public class RDS_Connection {
             Connection conn = DriverManager.getConnection(connection_string, username , password);
                     
              Statement st = conn.createStatement(); 
-             String query = "SELECT ALLOWED FROM ALLOWS WHERE HOSTNAME='" + hostname +"' " + "AND '" + filepath +"' LIKE ALLOWED" ;
+             String query = "SELECT ALLOWED FROM ALLOWS WHERE HOSTNAME='" + hostname +"' " + "AND '" + filepath +"' LIKE CONCAT(ALLOWED, '%')" ;
              ResultSet rs = st.executeQuery(query);
              
              if (rs.next() == false) {
@@ -203,7 +203,7 @@ public class RDS_Connection {
             Connection conn = DriverManager.getConnection(connection_string, username , password);
                     
              Statement st = conn.createStatement(); 
-             String query = "SELECT DISALLOWED FROM DISALLOWS WHERE HOSTNAME='" + hostname + "' " + "AND '" + filepath +"' LIKE DISALLOWED" ;
+             String query = "SELECT DISALLOWED FROM DISALLOWS WHERE HOSTNAME='" + hostname + "' " + "AND '" + filepath +"' LIKE CONCAT(DISALLOWED, '%')" ;
              ResultSet rs = st.executeQuery(query);
              
              if (rs.next() == false) {
