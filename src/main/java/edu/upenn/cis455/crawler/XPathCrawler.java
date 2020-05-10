@@ -41,7 +41,6 @@ public class XPathCrawler {
 	private static final String CRAWLER_BOLT = "CRAWLER_BOLT";
 	private static final String DOWNLOADER_BOLT = "DOWNLOADER_BOLT";
 	private static final String FILTER_BOLT = "FILTER_BOLT";
-//	private static final String CHANNEL_BOLT = "CHANNEL_BOLT";
 	private static final String ROBOTSTXT_BOLT = "ROBOTSTXT_BOLT";
 	public static final String TOPOLOGY_NAME = "test";
 	public static final String USER_AGENT = "cis455crawler";

@@ -208,7 +208,7 @@ public class RobotsTxtBolt implements IRichBolt {
             return null;
         }
         if (code >= 400) {
-            System.err.print("https://" + robotsTxtHost + "/robots.txt: ");
+            System.err.print("https://" + robotsTxtHost + "/robots.txt: " + code + " ");
             switch (code) {
             case 400:
                 System.err.print("Bad request");
@@ -316,7 +316,7 @@ public class RobotsTxtBolt implements IRichBolt {
             return null;
         }
         if (code >= 400) {
-            System.err.print("http://" + robotsTxtHost + "/robots.txt: ");
+            System.err.print("http://" + robotsTxtHost + "/robots.txt: " + code + " ");
             switch (code) {
             case 400:
                 System.err.print("Bad request");

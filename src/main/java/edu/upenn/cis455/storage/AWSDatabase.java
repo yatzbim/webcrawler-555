@@ -95,7 +95,7 @@ public class AWSDatabase {
     }
 
     // method to add a new page to the buckets
-    public void savePage(String url, String html) {
+    public synchronized void savePage(String url, String html) {
         if (url == null || html == null) {
             return;
         }
@@ -110,7 +110,7 @@ public class AWSDatabase {
     }
 
     // method to add a list of outgoing links
-    public void saveOutgoingLinks(String url, List<String> urlList) {
+    public synchronized void saveOutgoingLinks(String url, List<String> urlList) {
         if (url == null || urlList == null) {
             return;
         }
@@ -144,7 +144,7 @@ public class AWSDatabase {
 
     public static void main(String[] args) {
         
-        String url = "https://en.wikipedia.org/wiki/File:Emile_Loubet.jpg";
+        String url = "https://www.reddit.com/r/AskMen/comments/ggeo2n/as_a_man_how_did_you_win_the_genetic_lottery_how/";
         
         url = url.replace(" ", "%20");
         
@@ -165,7 +165,7 @@ public class AWSDatabase {
         System.out.println(url);
         
         System.out.println(key);
-        S3Object o = s3Client.getObject(HTML_BUCKET, key);
+        S3Object o = s3Client.getObject(OUTURL_BUCKET_1, key_1);
         S3ObjectInputStream in = o.getObjectContent();
         
         InputStreamReader inR = new InputStreamReader(in, StandardCharsets.UTF_8);

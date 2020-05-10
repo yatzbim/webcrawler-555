@@ -76,8 +76,8 @@ public class FilterBolt implements IRichBolt {
 				continue;
 			}
 
-			link = link.replace("./", "");
-            link = link.replace("/'", "");
+//			link = link.replace("./", "");
+//            link = link.replace("/'", "");
 			
 			// make sure it's a valid URL
             try {
@@ -86,17 +86,17 @@ public class FilterBolt implements IRichBolt {
                 continue;
             }
             
-            URLInfo uInfo = new URLInfo(link);
+//            URLInfo uInfo = new URLInfo(link);
 //            String hostPort = uInfo.getHostName() + ":" + uInfo.getPortNo();
-            try {
-                if (uInfo.getHostName().contains("google") || (uInfo.getHostName().contains("wikipedia")
-                        && (uInfo.getFilePath().contains("&action=edit") || uInfo.getFilePath().contains("title=Special:")))) {
-                    continue;
-                }
-            } catch (NullPointerException e) {
-                System.out.println("NULL IN FILTER: " + uInfo.getHostName() + " " + uInfo.getPortNo() + " " + uInfo.getFilePath());
-                continue;
-            }
+//            try {
+//                if (uInfo.getHostName().contains("google") || (uInfo.getHostName().contains("wikipedia")
+//                        && (uInfo.getFilePath().contains("&action=edit") || uInfo.getFilePath().contains("title=Special:")))) {
+//                    continue;
+//                }
+//            } catch (NullPointerException e) {
+//                System.out.println("NULL IN FILTER: " + uInfo.getHostName() + " " + uInfo.getPortNo() + " " + uInfo.getFilePath());
+//                continue;
+//            }
             
             if (XPathCrawler.rds.get_crawltime(link) > 0) {
 //                System.out.println("Already seen " + link + " - not crawling");
@@ -111,9 +111,9 @@ public class FilterBolt implements IRichBolt {
 //                continue;
 //            }
             
-            if (link.startsWith("http://www.imdb.com") || link.startsWith("http://www.hulu.com")) {
-                link = link.replaceFirst("http:", "https:");
-            }
+//            if (link.startsWith("http://www.imdb.com") || link.startsWith("http://www.hulu.com")) {
+//                link = link.replaceFirst("http:", "https:");
+//            }
 			
 			instance.frontier.add(link);
 		}

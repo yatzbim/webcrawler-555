@@ -141,7 +141,7 @@ public class CrawlerBolt implements IRichBolt {
             boolean delayAllows = true;
 //            synchronized (XPathCrawler.accessLock) {
                 if (instance.lastAccessed.containsKey(hostPort) && instance.lastAccessed.get(hostPort) > new Date().getTime()) {
-//                    System.out.println("Delaying (http)");
+                    System.out.println("Delaying (http)");
                     delayAllows = false;
                 }
 //            }
@@ -262,7 +262,10 @@ public class CrawlerBolt implements IRichBolt {
             // TODO: figure out a good max size
             int contentLength = httpConn.getContentLength();
             if (contentLength > XPathCrawler.maxSize) {
-                downloadable = false;
+                System.out.println(curr + " is too large");
+                httpConn.disconnect();
+                idle.decrementAndGet();
+                return;
             }
 
             // determine content type
@@ -322,7 +325,7 @@ public class CrawlerBolt implements IRichBolt {
             boolean delayAllows = true;
 //            synchronized (XPathCrawler.accessLock) {
                 if (instance.lastAccessed.get(hostPort) != null && instance.lastAccessed.get(hostPort) > new Date().getTime()) {
-//                    System.out.println("Delaying (https)");
+                    System.out.println("Delaying (https)");
                     delayAllows = false;
                 }
 //            }
@@ -441,7 +444,10 @@ public class CrawlerBolt implements IRichBolt {
             // TODO: come up with a good maxsize
             int contentLength = httpsConn.getContentLength();
             if (contentLength > XPathCrawler.maxSize) {
-                downloadable = false;
+                System.out.println(curr + " is not an HTML doc - not downloading or crawling");
+                httpsConn.disconnect();
+                idle.decrementAndGet();
+                return;
             }
 
             // determine content type
@@ -454,6 +460,7 @@ public class CrawlerBolt implements IRichBolt {
 
             if (!downloadable) {
                 System.out.println(curr + " is not an HTML doc - not downloading or crawling");
+                httpsConn.disconnect();
                 idle.decrementAndGet();
                 return;
             }

@@ -184,9 +184,13 @@ public class DownloaderBolt implements IRichBolt {
     public static String constructLink(String href, String curr, URLInfo info) {
         StringBuilder sb = new StringBuilder();
         
+        if (href.contains("..")) {
+            return null;
+        }
+        
         href = href.replace("./", "");
         href = href.replace("/'", "");
-        href = href.replace(" ", "%20"); // TODO: expand to all UTF-8 encoding
+        href = href.replace(" ", "%20");
         
         String[] removeHashtag = href.split("#");
         if (removeHashtag.length > 2) {
@@ -201,10 +205,11 @@ public class DownloaderBolt implements IRichBolt {
 //        System.out.println("HREF: " + href);
         if (href.contains("javascript:") || href.equals(".") || href.endsWith("/robots.txt")
                 || href.contains("twitter.com") || href.contains("facebook.com")
-                || ((href.contains("wikipedia") || curr.contains("wikipedia")) && href.contains("index.php")) || href.contains("..")
+                || ((href.contains("wikipedia") || curr.contains("wikipedia")) && href.contains("index.php"))
                 || (href.contains("eclipse.org") && href.contains("download"))
-                || href.contains("advertising.amazon.") || href.contains("philaathenaeum.org")) {
-//             System.out.println("CUT BITCH: " + href);
+                || href.contains("advertising.amazon.") || href.contains("philaathenaeum.org")
+                || href.contains("coupons.businessinsider.")) {
+            // System.out.println("CUT BITCH: " + href);
             return null;
         }
         
@@ -233,7 +238,7 @@ public class DownloaderBolt implements IRichBolt {
                 
                 String[] linkPieces = noQuery.split("/");
                 String bookend = linkPieces[linkPieces.length-1];
-                if (!bookend.equals(info.getHostName()) && bookend.contains(".") && !bookend.contains("java.")) {
+                if (!bookend.equals(info.getHostName()) && bookend.contains(".")) {
                     // last thing in path is a file, get rid of it before appending href
                     for (int i = 0; i < linkPieces.length - 1; i++) {
                         sb.append(linkPieces[i]);
