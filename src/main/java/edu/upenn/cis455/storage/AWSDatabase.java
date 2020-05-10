@@ -12,6 +12,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.util.StreamUtils;
@@ -115,7 +116,7 @@ public class AWSDatabase {
     }
 
     // method to add a list of outgoing links
-    public synchronized void saveOutgoingLinks(String url, List<String> urlList) {
+    public synchronized void saveOutgoingLinks(String url, Set<String> urlList) {
         if (url == null || urlList == null) {
             return;
         }
@@ -125,12 +126,21 @@ public class AWSDatabase {
         sb.append('\t');
         sb.append("1.0");
         sb.append('\t');
-        for (int i = 0; i < urlList.size(); i++) {
-            sb.append(urlList.get(i));
+//        for (int i = 0; i < urlList.size(); i++) {
+//            sb.append(urlList.get(i));
+//            if (i != urlList.size() - 1) {
+//                sb.append(',');
+//            }
+//        }
+        int i = 0;
+        for (String s : urlList) {
+            sb.append(s);
             if (i != urlList.size() - 1) {
                 sb.append(',');
             }
+            i++;
         }
+        
         sb.append('\n');
         
         InputStream is = s3Client.getObject(OUTURL_BUCKET, "pageRankStart.txt").getObjectContent();
