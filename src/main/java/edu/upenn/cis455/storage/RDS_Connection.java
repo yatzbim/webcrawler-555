@@ -137,6 +137,29 @@ public class RDS_Connection {
         
     }
     
+public synchronized void urls_gotten(String hash) {
+        
+        try{
+            Class.forName("com.mysql.cj.jdbc.Driver");  
+            Connection conn = DriverManager.getConnection(connection_string, username , password);
+                    
+             Statement st = conn.createStatement(); 
+             st.executeUpdate("INSERT INTO URLS_GOTTEN " + 
+                         "VALUES ('"+ hash +"');");
+             
+             conn.close(); 
+
+            }
+            catch (SQLException e) {
+                // TODO Auto-generated catch block
+//                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                // TODO Auto-generated catch block
+//                e.printStackTrace();
+            }
+        
+    }
+    
     //Function to write hostnames and crawl timestamp to URLCRAWLTIME
     public void crawltime_write(String hostname, long timestamp) {
         
