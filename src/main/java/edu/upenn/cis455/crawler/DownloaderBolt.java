@@ -184,12 +184,11 @@ public class DownloaderBolt implements IRichBolt {
     public static String constructLink(String href, String curr, URLInfo info) {
         StringBuilder sb = new StringBuilder();
         
-        if (href.contains("..")) {
+        if (href.contains("..") || href.contains("'")) {
             return null;
         }
         
         href = href.replace("./", "");
-        href = href.replace("/'", "");
         href = href.replace(" ", "%20");
         
         String[] removeHashtag = href.split("#");
