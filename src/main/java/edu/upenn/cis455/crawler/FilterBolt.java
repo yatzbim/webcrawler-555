@@ -99,7 +99,7 @@ public class FilterBolt implements IRichBolt {
 //                continue;
 //            }
             
-            if (link.startsWith("http://redditlist.com/nsfw")) {
+            if (link.startsWith("http://redditlist.com/nsfw") || link.contains("google")) {
                 continue;
             }
             

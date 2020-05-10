@@ -258,7 +258,9 @@ public class DownloaderBolt implements IRichBolt {
 
         } else {
             // absolute link
-            sb.append(href);
+            if (!info.getHostName().contains("wikipedia")) {
+                sb.append(href);
+            }
         }
 
         String fullLink = sb.toString();
