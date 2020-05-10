@@ -10,6 +10,7 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -385,7 +386,8 @@ public class RobotsTxtBolt implements IRichBolt {
     
     
     public static void main(String[] args) throws UnknownHostException {
-        String robots = getHttpsRobotsTxt("en.wikipedia.org:443");
-        System.out.println(robots);
+//        String robots = getHttpsRobotsTxt("en.wikipedia.org:443");
+//        System.out.println(robots);
+        System.out.println(new Date().getTime());
     }
 }

@@ -154,9 +154,9 @@ public class CrawlerBolt implements IRichBolt {
             }
             
             int delay = XPathCrawler.rds.get_crawldelay(hostPort);
-            if (delay == -1) {
-                delay = 0;
-            }
+//            if (delay == -1) {
+//                delay = 0;
+//            }
 
             // since we've waited long enough, update the last access
             synchronized (XPathCrawler.accessLock) {
@@ -324,6 +324,7 @@ public class CrawlerBolt implements IRichBolt {
 
             boolean delayAllows = true;
 //            synchronized (XPathCrawler.accessLock) {
+            if (instance.lastAccessed.get(hostPort) != null)
                 if (instance.lastAccessed.get(hostPort) != null && instance.lastAccessed.get(hostPort) > new Date().getTime()) {
                     System.out.println("Delaying (https)");
                     delayAllows = false;
@@ -349,13 +350,14 @@ public class CrawlerBolt implements IRichBolt {
             }
 
             int delay = XPathCrawler.rds.get_crawldelay(hostPort);
-            if (delay == -1) {
-                delay = 0;
-            }
+//            if (delay == -1) {
+//                delay = 0;
+//            }
             // since we've waited long enough, update the last access
             synchronized (XPathCrawler.accessLock) {
 //                System.out.println("New Access: " + hostPort);
                 instance.lastAccessed.put(hostPort, new Date().getTime() + (delay * 1000));
+                
             }
 
             // send HEAD request

@@ -206,7 +206,7 @@ public class XPathCrawler {
 
 		TopologyBuilder builder = new TopologyBuilder();
 
-		builder.setSpout(URL_SPOUT, urlSpout, 5);
+		builder.setSpout(URL_SPOUT, urlSpout, 1);
 		
 		builder.setBolt(ROBOTSTXT_BOLT, robotsTxtBolt, 5).shuffleGrouping(URL_SPOUT);
 
