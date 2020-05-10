@@ -111,6 +111,7 @@ public class DownloaderBolt implements IRichBolt {
 //                doc.getElementsByClass("footer").remove();
                 doc.charset(Charset.forName("UTF-8"));
             } catch (IOException e) {
+                e.printStackTrace();
                 System.err.println("Error connecting to " + curr + " with JSoup. Continuing");
             }
 
@@ -270,16 +271,14 @@ public class DownloaderBolt implements IRichBolt {
     }
 
     public static void main(String[] args) throws IOException {
-        String href = "http://ataripodcast.libsyn.com/2013/06/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'/'";
+        String href = "https://www.craigslist.org/about/sites";
         
-        href = href.replace("./", "");
-        href = href.replace("/'", "");
-        href = href.replace(" ", "%20");
-        System.out.println(href);
         
-//        Document doc = Jsoup.connect(link)
-//                .userAgent("cis455crawler")
-//                .get();
+        Document doc = Jsoup.connect(href).timeout(5000)
+                .userAgent("cis455crawler")
+                .get();
+        
+        doc.charset(Charset.forName("UTF-8"));
 //        System.out.println(doc.toString());
         
 //        for (Element elt : linkElts) {
@@ -290,12 +289,13 @@ public class DownloaderBolt implements IRichBolt {
 
         
         
-//        String text = null;
+        String text = null;
 //////        LanguageIdentifier object = null;
-//        if (doc != null) {
-//            text = doc.text();
+        if (doc != null) {
+            text = doc.text();
 ////            object = new LanguageIdentifier(text);
-//        }
+        }
+        System.out.println(text);
 ////
 //        LanguageDetector detector = new OptimaizeLangDetector().loadModels();
 //        LanguageResult langResult = detector.detect(text);
