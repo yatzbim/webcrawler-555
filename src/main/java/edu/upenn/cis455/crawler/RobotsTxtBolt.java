@@ -72,6 +72,10 @@ public class RobotsTxtBolt implements IRichBolt {
         String currRobotsTxt = null;
 
         URLInfo uInfo = new URLInfo(curr);
+        if (uInfo.getHostName() == null || uInfo.getPortNo() == 0) {
+            idle.decrementAndGet();
+            return;
+        }
         String hostPort = uInfo.getHostName() + ":" + uInfo.getPortNo();
         String robotsTxtSite = hostPort + "/robots.txt";
 
