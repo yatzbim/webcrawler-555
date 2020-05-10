@@ -133,10 +133,13 @@ public class DownloaderBolt implements IRichBolt {
                 Elements linkElts = doc.select("a[href]");
                 for (Element elt : linkElts) {
                     String rawLink = elt.attributes().get("href").trim();
-                    if (rawLink.isEmpty() || rawLink.charAt(0) == '#'
-                            || (rawLink.length() > 1 && rawLink.charAt(0) == '/' && rawLink.charAt(1) == '/')
-                            || rawLink.startsWith("mailto:")) {
+                    if (rawLink.isEmpty() || rawLink.charAt(0) == '#') {
                         continue;
+                    }
+                    
+                    // TODO: ¯\_(ツ)_/¯
+                    if ((rawLink.length() > 1 && rawLink.charAt(0) == '/' && rawLink.charAt(1) == '/')) {
+                        rawLink = "https:" + rawLink;
                     }
 
                     String fullLink = constructLink(rawLink, curr, uInfo);
@@ -202,8 +205,8 @@ public class DownloaderBolt implements IRichBolt {
         
         // TODO: build out to more unwanted links
 //        System.out.println("HREF: " + href);
-        if (href.contains("javascript:") || href.equals(".") || href.equals("'") || href.endsWith("/robots.txt")
-                || href.contains("twitter.com") || href.contains("facebook.com")
+        if (href.contains("javascript:") || href.contains("mailto:") || href.equals(".") || href.equals("'")
+                || href.endsWith("/robots.txt") || href.contains("twitter.com") || href.contains("facebook.com")
                 || ((href.contains("wikipedia") || curr.contains("wikipedia")) && href.contains("index.php"))
                 || (href.contains("eclipse.org") && href.contains("download")) || href.contains("advertising.amazon.")
                 || href.contains("philaathenaeum.org") || href.contains("coupons.businessinsider.")) {
