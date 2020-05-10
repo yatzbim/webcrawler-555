@@ -189,6 +189,8 @@ public class RobotsTxtBolt implements IRichBolt {
             System.err.println("Failed to connect to https://" + robotsTxtHost + "/robots.txt");
             return null;
         }
+        
+        conn.setReadTimeout(2000);
 
         try {
             conn.setRequestMethod("GET");
@@ -297,6 +299,8 @@ public class RobotsTxtBolt implements IRichBolt {
             System.err.println("Failed to connect to http://" + robotsTxtHost + "/robots.txt");
             return null;
         }
+        
+        conn.setReadTimeout(2000);
 
         try {
             conn.setRequestMethod("GET");

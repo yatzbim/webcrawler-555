@@ -106,7 +106,7 @@ public class DownloaderBolt implements IRichBolt {
             // jsoup
             Document doc = null;
             try {
-                doc = Jsoup.connect(curr).userAgent("cis455crawler").get();
+                doc = Jsoup.connect(curr).timeout(2000).userAgent("cis455crawler").get();
 //                doc.getElementsByClass("header").remove();
 //                doc.getElementsByClass("footer").remove();
                 doc.charset(Charset.forName("UTF-8"));
