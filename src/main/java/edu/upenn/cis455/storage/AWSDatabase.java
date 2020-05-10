@@ -37,10 +37,10 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 
 public class AWSDatabase {
 
-//    public static final String HTML_BUCKET = "bigindexcontent";
-    public static final String OUTURL_BUCKET = "pagerank500";
-    public static final String HTML_BUCKET = "tumbling-tumbleweeds";
-//    public static final String OUTURL_BUCKET = "outgoinglinks-1";
+//    private static final String HTML_BUCKET = "bigindexcontent";
+    private static final String OUTURL_BUCKET = "worker-bucket-1";
+    private static final String HTML_BUCKET = "tumbling-tumbleweeds";
+//    private static final String OUTURL_BUCKET = "outgoinglinks-1";
     
     public static final String OUTURL_BUCKET_KEY = "pageRankStart.txt";
     
@@ -49,7 +49,7 @@ public class AWSDatabase {
     public static final String aws_session_token = "FwoGZXIvYXdzEJ7//////////wEaDJq/DmpbHH4RkzZSJSLGAbEGifaPhftUxOQE44byImO6GIpNos21iiGv457wuLR8EAhHeCh/po/Vh1sp/EbrU4rWLKPF0kh9un7pY9YvgbbW34pZlwv8uwGRtUZr0JayMxz1aOKiLYsOYdm1P/9ChsRSYeY5qNYnNIcEbI8BOvz0LsWAX8qnNrmqXXlI5N9iHt/PV4UTt9Utl3nctremt6WxqrB1LV6FE4qyWvlUpP15QMqxXbM69PYD3F1flfoshDT9ckqv3nb6+GJdXE+klkkVnutzICjl4tH1BTItJCN1AaGSVudVeGmY1Oj4FosJEh8IL8vwAuQEZEoNlZJfXTsFWKCkas93DJlx";
     public static final String input_directory = "input_directory";
     
-    static AWSCredentials credentials = new BasicSessionCredentials("ASIA2RS2IRBE5FYW6FED", "KBigNejuDCdMMujEZg9s4TDfBvvh2iYKT52QDrym", "FwoGZXIvYXdzEJ7//////////wEaDIDHKgRlGmr1zQqQxSLEAaSZiCwqjKyjFPpKWE2y9KDuX2xTuw8NvNMR7Hu6Y4llSgTzXEmwqLYB8ozLJyLPkPjSJUVFC3wwr3iob2PeIGXBp3MPLQcOtpiubO/v1cfWmzp1STpmKsnQ/WSbRxfTFQV7C9NS0v6kZKVc6JM3t6cVUnRDzkTPXHj8preoHuN/9dqV1WDGf8GZZwvwyaSvJcpPAeagiOhWbfN8Gk+0ZL6PBWW/Gsc3MmXgZLrXUV3h1sFqAMSwOfW1h9N87RU6eF9oKoco6OrR9QUyLVAzkRHoai/w4YkPkWdS5J7EGRSTpY/ISbyfS40OJl7qpK7VmOk5Xaq6CAyEPA==");
+    private static AWSCredentials credentials = new BasicSessionCredentials("ASIA2RS2IRBE5FYW6FED", "KBigNejuDCdMMujEZg9s4TDfBvvh2iYKT52QDrym", "FwoGZXIvYXdzEJ7//////////wEaDIDHKgRlGmr1zQqQxSLEAaSZiCwqjKyjFPpKWE2y9KDuX2xTuw8NvNMR7Hu6Y4llSgTzXEmwqLYB8ozLJyLPkPjSJUVFC3wwr3iob2PeIGXBp3MPLQcOtpiubO/v1cfWmzp1STpmKsnQ/WSbRxfTFQV7C9NS0v6kZKVc6JM3t6cVUnRDzkTPXHj8preoHuN/9dqV1WDGf8GZZwvwyaSvJcpPAeagiOhWbfN8Gk+0ZL6PBWW/Gsc3MmXgZLrXUV3h1sFqAMSwOfW1h9N87RU6eF9oKoco6OrR9QUyLVAzkRHoai/w4YkPkWdS5J7EGRSTpY/ISbyfS40OJl7qpK7VmOk5Xaq6CAyEPA==");
     
     ObjectMetadata meta = new ObjectMetadata();
     
@@ -117,7 +117,6 @@ public class AWSDatabase {
             return;
         }
         
-        
         StringBuilder sb = new StringBuilder();
         sb.append(url);
         sb.append('\t');
@@ -131,7 +130,6 @@ public class AWSDatabase {
         }
         sb.append('\n');
         
-
         InputStream is = s3Client.getObject(OUTURL_BUCKET, "pageRankStart.txt").getObjectContent();
         String data = null;
         try {
@@ -145,6 +143,7 @@ public class AWSDatabase {
         result.append(sb);
         
         s3Client.putObject(OUTURL_BUCKET, OUTURL_BUCKET_KEY, result.toString());
+        s3Client.setObjectAcl(OUTURL_BUCKET, OUTURL_BUCKET_KEY, CannedAccessControlList.BucketOwnerFullControl);
     }
 
     public static void main(String[] args) {
