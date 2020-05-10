@@ -196,7 +196,7 @@ public class RDS_Connection {
              String query = "SELECT ALLOWED FROM ALLOWS WHERE HOSTNAME='" + hostname +"' " + "AND '" + filepath +"' LIKE CONCAT(ALLOWED, '%')" ;
              ResultSet rs = st.executeQuery(query);
              
-             if (rs.next() == false) {
+             if (!rs.isBeforeFirst()) {
                     conn.close();
                     return false;
                   }
@@ -227,7 +227,7 @@ public class RDS_Connection {
              String query = "SELECT DISALLOWED FROM DISALLOWS WHERE HOSTNAME='" + hostname + "' " + "AND '" + filepath +"' LIKE CONCAT(DISALLOWED, '%')" ;
              ResultSet rs = st.executeQuery(query);
              
-             if (rs.next() == false) {
+             if (!rs.isBeforeFirst()) {
                     conn.close();
                     return false;
                   }
