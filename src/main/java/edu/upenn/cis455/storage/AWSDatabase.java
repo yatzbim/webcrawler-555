@@ -1,6 +1,7 @@
 package edu.upenn.cis455.storage;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
@@ -12,6 +13,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.springframework.util.StreamUtils;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
@@ -35,13 +38,11 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 public class AWSDatabase {
 
 //    public static final String HTML_BUCKET = "bigindexcontent";
-//    public static final String OUTURL_BUCKET_1 = "worker-bucket-1";
-//    public static final String OUTURL_BUCKET_2 = "worker-bucket-2";
+    public static final String OUTURL_BUCKET = "pagerank-500";
     public static final String HTML_BUCKET = "tumbling-tumbleweeds";
-    public static final String OUTURL_BUCKET_1 = "outgoinglinks-1";
-    public static final String OUTURL_BUCKET_2 = "outgoinglinks-2";
-
-    private static AtomicInteger whichLinkBucket = new AtomicInteger(1);
+//    public static final String OUTURL_BUCKET = "outgoinglinks-1";
+    
+    public static final String OUTURL_BUCKET_KEY = "pageRankStart.txt";
     
     public static final String aws_access_key_id = "ASIAZBMO5NPG2KYBIMO3";
     public static final String aws_secret_access_key = "2PohpbTL3SeBMWmdqE8XLQxG+MGwltaBMQkTvfjt";
@@ -78,8 +79,9 @@ public class AWSDatabase {
             digest = MessageDigest.getInstance("SHA-256");
             meta.setContentEncoding("UTF-8");
             s3Client.setBucketAcl(HTML_BUCKET, CannedAccessControlList.BucketOwnerFullControl);
-            s3Client.setBucketAcl(OUTURL_BUCKET_1, CannedAccessControlList.BucketOwnerFullControl);
-            s3Client.setBucketAcl(OUTURL_BUCKET_2, CannedAccessControlList.BucketOwnerFullControl);
+            s3Client.setBucketAcl(OUTURL_BUCKET, CannedAccessControlList.BucketOwnerFullControl);
+            s3Client.putObject(OUTURL_BUCKET, OUTURL_BUCKET_KEY, "");
+            s3Client.setObjectAcl(OUTURL_BUCKET, OUTURL_BUCKET_KEY, CannedAccessControlList.BucketOwnerFullControl);
         } catch (NoSuchAlgorithmException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -114,32 +116,35 @@ public class AWSDatabase {
         if (url == null || urlList == null) {
             return;
         }
-
+        
+        
         StringBuilder sb = new StringBuilder();
+        sb.append(url);
+        sb.append('\t');
+        sb.append("1.0");
+        sb.append('\t');
         for (int i = 0; i < urlList.size(); i++) {
             sb.append(urlList.get(i));
             if (i != urlList.size() - 1) {
-                sb.append('\n');
+                sb.append(',');
             }
         }
+        sb.append('\n');
+        
 
-        String urls = sb.toString();
-        
-        String key = RDS_Connection.encodeHex(digest.digest(url.getBytes()));
-        
-        if (whichLinkBucket.get() == 1) {
-            s3Client.putObject(OUTURL_BUCKET_1, input_directory + "/" + key, urls);
-            s3Client.setObjectAcl(OUTURL_BUCKET_1, input_directory + "/" + key, CannedAccessControlList.BucketOwnerFullControl);
-            whichLinkBucket.incrementAndGet();
-        } else if (whichLinkBucket.get() == 2) {
-            s3Client.putObject(OUTURL_BUCKET_2, input_directory + "/" + key, urls);
-            s3Client.setObjectAcl(OUTURL_BUCKET_2, input_directory + "/" + key, CannedAccessControlList.BucketOwnerFullControl);
-            whichLinkBucket.decrementAndGet();
-        } else {
-            s3Client.putObject(OUTURL_BUCKET_2, input_directory + "/" + key, urls);
-            s3Client.setObjectAcl(OUTURL_BUCKET_2, input_directory + "/" + key, CannedAccessControlList.BucketOwnerFullControl);
-            whichLinkBucket.set(1);
+        InputStream is = s3Client.getObject(OUTURL_BUCKET, "pageRankStart.txt").getObjectContent();
+        String data = null;
+        try {
+            data = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
         }
+        
+        StringBuilder result = new StringBuilder(data);
+        result.append(sb);
+        
+        s3Client.putObject(OUTURL_BUCKET, OUTURL_BUCKET_KEY, result.toString());
     }
 
     public static void main(String[] args) {
@@ -165,7 +170,7 @@ public class AWSDatabase {
         System.out.println(url);
         
         System.out.println(key);
-        S3Object o = s3Client.getObject(OUTURL_BUCKET_1, key_1);
+        S3Object o = s3Client.getObject(OUTURL_BUCKET, key_1);
         S3ObjectInputStream in = o.getObjectContent();
         
         InputStreamReader inR = new InputStreamReader(in, StandardCharsets.UTF_8);
