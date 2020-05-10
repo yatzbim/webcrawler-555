@@ -40,8 +40,8 @@ import edu.upenn.cis455.crawler.XPathCrawler;
 
 public class AWSDatabase {
 
-    private static final String HTML_BUCKET = "indexcontent5000";
-    private static final String OUTURL_BUCKET = "pagerank5000";
+    private static final String HTML_BUCKET = "indexcontent80k";
+    private static final String OUTURL_BUCKET = "testpagerank1k";
 //    private static final String HTML_BUCKET = "tumbling-tumbleweeds";
 //    private static final String OUTURL_BUCKET = "outgoinglinks-1";
     
@@ -81,10 +81,10 @@ public class AWSDatabase {
         try {
             digest = MessageDigest.getInstance("SHA-256");
             meta.setContentEncoding("UTF-8");
-            s3Client.setBucketAcl(HTML_BUCKET, CannedAccessControlList.BucketOwnerFullControl);
-            s3Client.setBucketAcl(OUTURL_BUCKET, CannedAccessControlList.BucketOwnerFullControl);
+            s3Client.setBucketAcl(HTML_BUCKET, CannedAccessControlList.PublicReadWrite);
+            s3Client.setBucketAcl(OUTURL_BUCKET, CannedAccessControlList.PublicReadWrite);
             s3Client.putObject(OUTURL_BUCKET, OUTURL_BUCKET_KEY, "");
-            s3Client.setObjectAcl(OUTURL_BUCKET, OUTURL_BUCKET_KEY, CannedAccessControlList.BucketOwnerFullControl);
+            s3Client.setObjectAcl(OUTURL_BUCKET, OUTURL_BUCKET_KEY, CannedAccessControlList.PublicReadWrite);
         } catch (NoSuchAlgorithmException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -112,7 +112,7 @@ public class AWSDatabase {
         
         s3Client.putObject(HTML_BUCKET, key, input, meta);
 //        s3Client.putObject(HTML_BUCKET, key, html);
-        s3Client.setObjectAcl(HTML_BUCKET, key, CannedAccessControlList.BucketOwnerFullControl);
+        s3Client.setObjectAcl(HTML_BUCKET, key, CannedAccessControlList.PublicReadWrite);
     }
 
     // method to add a list of outgoing links
@@ -156,7 +156,7 @@ public class AWSDatabase {
         result.append(sb);
         
         s3Client.putObject(OUTURL_BUCKET, OUTURL_BUCKET_KEY, result.toString());
-        s3Client.setObjectAcl(OUTURL_BUCKET, OUTURL_BUCKET_KEY, CannedAccessControlList.BucketOwnerFullControl);
+        s3Client.setObjectAcl(OUTURL_BUCKET, OUTURL_BUCKET_KEY, CannedAccessControlList.PublicReadWrite);
     }
 
     public static void main(String[] args) {
