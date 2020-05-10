@@ -40,10 +40,10 @@ import edu.upenn.cis455.crawler.XPathCrawler;
 
 public class AWSDatabase {
 
-    private static final String HTML_BUCKET = "indexcontent1000";
-    private static final String OUTURL_BUCKET = "pagerank1000";
-//    private static final String HTML_BUCKET = "tumbling-tumbleweeds";
-//    private static final String OUTURL_BUCKET = "outgoinglinks-1";
+//    private static final String HTML_BUCKET = "indexcontent5000";
+//    private static final String OUTURL_BUCKET = "pagerank5000";
+    private static final String HTML_BUCKET = "tumbling-tumbleweeds";
+    private static final String OUTURL_BUCKET = "outgoinglinks-1";
     
     public static final String OUTURL_BUCKET_KEY = "pageRankStart.txt";
     
@@ -116,7 +116,7 @@ public class AWSDatabase {
     }
 
     // method to add a list of outgoing links
-    public synchronized void saveOutgoingLinks(String url, Set<String> urlList) {
+    public synchronized void saveOutgoingLinks(String url, List<String> urlList) {
         if (url == null || urlList == null) {
             return;
         }
@@ -126,20 +126,20 @@ public class AWSDatabase {
         sb.append('\t');
         sb.append("1.0");
         sb.append('\t');
-//        for (int i = 0; i < urlList.size(); i++) {
-//            sb.append(urlList.get(i));
-//            if (i != urlList.size() - 1) {
-//                sb.append(',');
-//            }
-//        }
-        int i = 0;
-        for (String s : urlList) {
-            sb.append(s);
+        for (int i = 0; i < urlList.size(); i++) {
+            sb.append(urlList.get(i));
             if (i != urlList.size() - 1) {
                 sb.append(',');
             }
-            i++;
         }
+//        int i = 0;
+//        for (String s : urlList) {
+//            sb.append(s);
+//            if (i != urlList.size() - 1) {
+//                sb.append(',');
+//            }
+//            i++;
+//        }
         
         sb.append('\n');
         

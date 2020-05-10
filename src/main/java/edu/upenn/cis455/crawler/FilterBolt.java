@@ -64,7 +64,7 @@ public class FilterBolt implements IRichBolt {
 		instance.inFlight.decrementAndGet();
 
 		@SuppressWarnings("unchecked")
-		Set<String> links = (Set<String>) input.getObjectByField("links");
+		List<String> links = (List<String>) input.getObjectByField("links");
 
 		if (links == null) {
 			idle.decrementAndGet();

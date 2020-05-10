@@ -9,11 +9,9 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -101,7 +99,7 @@ public class DownloaderBolt implements IRichBolt {
 
         URLInfo uInfo = new URLInfo(curr);
 
-        Set<String> newLinks = new HashSet<>();
+        List<String> newLinks = new LinkedList<>();
         
         if (XPathCrawler.rds.get_crawltime(curr) == 0) {
             XPathCrawler.rds.crawltime_write(curr, new Date().getTime());
