@@ -207,8 +207,13 @@ public class CrawlerBolt implements IRichBolt {
             if (hCode >= 300 && hCode < 400) {
                 // handle redirect (3xx) response code
                 String location = httpConn.getHeaderField("Location");
+                
+                if (curr.contains("'") || location.contains("'")) {
+                    idle.decrementAndGet();
+                    return;
+                }
+                
                 location = location.replace("./", "");
-                location = location.replace("/'", "");
                 location = location.replace(" ", "%20");
                 
                 if (XPathCrawler.rds.get_crawltime(curr) > 0) {
@@ -392,6 +397,11 @@ public class CrawlerBolt implements IRichBolt {
             if (hCode >= 300 && hCode < 400) {
                 // handle redirect (3xx) response code
                 String location = httpsConn.getHeaderField("Location");
+                if (curr.contains("'") || location.contains("'")) {
+                    idle.decrementAndGet();
+                    return;
+                }
+                
                 location = location.replace("./", "");
                 location = location.replace("/'", "");
                 location = location.replace(" ", "%20");
