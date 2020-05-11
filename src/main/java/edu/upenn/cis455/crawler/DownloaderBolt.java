@@ -140,7 +140,7 @@ public class DownloaderBolt implements IRichBolt {
                     
                     // TODO: ¯\_(ツ)_/¯
                     if ((rawLink.length() > 1 && rawLink.charAt(0) == '/' && rawLink.charAt(1) == '/')) {
-                        rawLink = "https:" + rawLink;
+                        continue;
                     }
 
                     String fullLink = constructLink(rawLink, curr, uInfo);
