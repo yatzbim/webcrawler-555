@@ -44,8 +44,8 @@ public class XPathCrawler {
 	private static final String ROBOTSTXT_BOLT = "ROBOTSTXT_BOLT";
 	public static final String TOPOLOGY_NAME = "test";
 	public static final String USER_AGENT = "cis455crawler";
-//	public static final RDS_Connection rds = new RDS_Connection("cis455bigrds.cu7l2h9ybbex.us-east-1.rds.amazonaws.com", "3306", "JONAH", "admin", "cis455crawler");
-	public static final RDS_Connection rds = new RDS_Connection("biggerrds.cu7l2h9ybbex.us-east-1.rds.amazonaws.com", "3306", "db50000", "admin", "cis455crawler");
+	public static final RDS_Connection rds = new RDS_Connection("cis455bigrds.cu7l2h9ybbex.us-east-1.rds.amazonaws.com", "3306", "graphs", "admin", "cis455crawler");
+//	public static final RDS_Connection rds = new RDS_Connection("biggerrds.cu7l2h9ybbex.us-east-1.rds.amazonaws.com", "3306", "db50000", "admin", "cis455crawler");
 
 	public static final Object accessLock = new Object();
 	

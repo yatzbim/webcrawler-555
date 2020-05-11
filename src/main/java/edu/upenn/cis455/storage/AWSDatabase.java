@@ -40,10 +40,11 @@ import edu.upenn.cis455.crawler.XPathCrawler;
 
 public class AWSDatabase {
 
-    private static final String HTML_BUCKET = "indexcontent10ksubset";
-    private static final String OUTURL_BUCKET = "pagerank50000";
-//    private static final String HTML_BUCKET = "tumbling-tumbleweeds";
-//    private static final String OUTURL_BUCKET = "outgoinglinks-1";
+//    private static final String HTML_BUCKET = "indexcontent10ksubset";
+//    private static final String OUTURL_BUCKET = "pagerank50000";
+    private static final String HTML_BUCKET = "evaluation-html";
+    private static final String OUTURL_BUCKET = "evaluation-links";
+    
     
     public static final String OUTURL_BUCKET_KEY = "pageRankStart.txt";
     

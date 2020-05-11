@@ -204,7 +204,9 @@ public class DownloaderBolt implements IRichBolt {
         
         href = removeHashtag[0];
         
-        // TODO: build out to more unwanted links
+        // TODO: untested
+        href = href.split("\\?")[0];
+        
 //        System.out.println("HREF: " + href);
         if (href.contains("javascript:") || href.contains("mailto:") || href.equals(".") || href.equals("'")
                 || href.endsWith("/robots.txt") || href.contains("twitter.com") || href.contains("facebook.com")
